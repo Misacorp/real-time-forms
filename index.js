@@ -11,20 +11,9 @@ const port = 1337;
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
-//  Configure formidable
-// app.use(formidable({
-//   encoding: 'utf-8',
-//   uploadDir: '/var/www/realtimeforms/htdocs/uploads/',
-//   multiples: true,
-// }));
 
-
-/*  POST /input
- *  Accepts form data consisting of multiple fields.
- */
+//  Post form data
 app.post('/response', (req, res) => {
-  console.log("Responding to /response request");
-
   //  Get each question_id - response pair.
   store
     .addResponse(req.body.response)
@@ -32,6 +21,24 @@ app.post('/response', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.status(200);
       res.send({success : 'lol'});
+    });
+});
+
+
+//  Create a question
+app.post('/question', (req,res) => {
+  //  Sanitize input data somehow?
+  let content = req.body.question_content;
+
+  //  Store in database
+  store
+    .addQuestion(content)
+    .then((question_id) => {
+      console.log(`Added question: "${content}" with id: ${question_id}`)
+
+      res.setHeader('Content-Type', 'application/json');
+      res.status(201);
+      res.send({question_id : question_id})
     });
 });
 
