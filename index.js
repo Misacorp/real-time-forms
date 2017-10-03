@@ -13,14 +13,14 @@ app.use(bodyParser.json());
 
 
 //  Post form data
-app.post('/response', (req, res) => {
+app.post('/response', (req,res) => {
   //  Get each question_id - response pair.
   store
     .addResponse(req.body.response)
-    .then(() => {
+    .then((data) => {
       res.setHeader('Content-Type', 'application/json');
       res.status(200);
-      res.send({success : 'lol'});
+      res.send({success : data});
     });
 });
 
@@ -38,7 +38,7 @@ app.post('/question', (req,res) => {
 
       res.setHeader('Content-Type', 'application/json');
       res.status(201);
-      res.send({question_id : question_id})
+      res.send({question_id : question_id});
     });
 });
 
