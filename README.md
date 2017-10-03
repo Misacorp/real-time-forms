@@ -10,7 +10,7 @@ Set up the Vagrant environment for this project with the following steps.
 
 Your database is now set up!
 
-## Set up the Node
+## Set up Node
 
 Run the following commands to install Node using NVM.
 
@@ -30,7 +30,7 @@ The following is a non-exhaustive list of modules this project depends on: `expr
 3. `npm i knex -g`
 4. Run knex migrations to bring database up to speed: `knex migrate:latest`
 
-Done! Your environment should be set for development. Some day I'll have this all neatly in a Vagrant provisioning script.
+Done! Your environment should be set for development. Some day I hope to have this all neatly in a Vagrant provisioning script.
 
 ## Connecting to Vagrant MySQL server from host
 
@@ -39,7 +39,6 @@ Done! Your environment should be set for development. Some day I'll have this al
 1. Add `[mysqld]` and `bind-address=0.0.0.0` to the start of `/etc/mysql/my.cnf/`
 2. Restart MySQL with `sudo service mysql restart`
 3. Configure your host machine's MySQL client with the following details.
-
 ```
 hostname: 127.0.0.1
 port: 6306
@@ -47,5 +46,4 @@ user: vagrant
 password: vagrant
 database: realtimeforms
 ```
-
 You should now be able to connect to the Vagrant machine's database from your host machine!
