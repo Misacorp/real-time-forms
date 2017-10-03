@@ -3,8 +3,25 @@ const FormData = document.querySelector('.formData');
 //  When submit is clicked
 FormData.addEventListener('submit', (e) => {
   e.preventDefault();
-  const color = FormData.querySelector('.favourite_color').value
-  post('/input', { color })
+  
+  //  Find input elements
+  let inputs = document.getElementsByClassName('real-time-input');
+
+  //  Initialize response object
+  const response = {};
+
+  //  Fill array with input values
+  for(let i = 0; i < inputs.length; i++) {
+    //  Get name and value
+    let name = inputs[i].getAttribute('name');
+    let value = inputs[i].value;
+
+    //  Add name-value pair object to responses
+    response[name] = value;
+  }
+
+  //  Send responses
+  post('/response', { response })
 });
 
 function post(path, data) {

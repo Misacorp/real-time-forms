@@ -16,10 +16,10 @@ Vagrant.configure(2) do |config|
   config.hostsupdater.aliases = []
   config.hostsupdater.aliases += ["realtimeforms.local", "www.realtimeforms.local"]
 
-  config.vm.synced_folder DIR, "/var/www/realtimeforms/htdocs", id: "vagrant-root", :owner => "www-data", :group => "www-data"
+  config.vm.synced_folder DIR, "/var/www/realtimeforms/htdocs", id: "vagrant-root", :owner => "vagrant", :group => "www-data"
 
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
-    vb.memory = "512"
+    vb.memory = "2048"
   end
 end

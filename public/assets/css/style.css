@@ -1,0 +1,19 @@
+* {
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+body {
+}
+label, input {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  text-align: center;
+}
+input {
+  height: 2em;
+  margin-bottom: 1em;
+}
+input[type="submit"] {
+  height: 3em;
+}
