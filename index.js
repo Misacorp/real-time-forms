@@ -43,6 +43,31 @@ app.post('/question', (req,res) => {
 });
 
 
+//  Get unique responses to a question
+app.get('/response', (req, res) => {
+  console.log("GET /response " + req.query.question);
+  let question_id = req.query.question;
+
+  //  Remove all non-numeric characters
+  question_id = question_id.replace(/\D/g,'');
+
+  store
+    .getAnswers(question_id)
+    .then((data) => {
+      // 'data' is in JSON format: {content : value}.
+      // Format data into a simple array.
+      let arr = [];
+      for(let i=0; i < data.length; i++) {
+        arr.push(data[i]['content']);
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200);
+      res.send(arr);
+    })
+});
+
+
 //  Create a manager
 app.post('/managers', (req, res) => {
   //  Parse form data
@@ -58,9 +83,6 @@ app.post('/managers', (req, res) => {
       res.send({manager_id : manager_name});
     });
 });
-
-
-
 
 
 //  Update a manager

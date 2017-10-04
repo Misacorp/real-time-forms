@@ -56,5 +56,27 @@ module.exports = {
       });
 
     return question_id;
+  },
+
+  getAnswers( qid ) {
+    // SELECT DISTINCT content FROM response
+    // WHERE question_id = 1;
+    let promise = knex('response')
+      .where({
+        question_id: qid
+      })
+      .distinct('content')
+      .select()
+      .returning('content')
+      .catch((e) => {
+        return Promise.reject(new Error('fail')
+          .then(
+            (error) => {},
+            (error) => {
+            console.log(error);
+          }))
+      });
+
+    return Promise.all(promise);
   }
 }
