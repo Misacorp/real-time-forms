@@ -17,6 +17,7 @@
     "express": "^4.16.1",
     "express-formidable": "^1.0.0",
     "knex": "^0.13.0",
-    "mysql": "^2.14.1"
+    "mysql": "^2.14.1",
+    "nodemon": "^1.12.1"
   }
 }
