@@ -4,6 +4,8 @@ const store = require('../actions/store');
 module.exports = function(router) {
   'use strict';
 
+
+
   router.route('/')
   .get((req,res,next) => {
     //  Get all questions
@@ -16,8 +18,22 @@ module.exports = function(router) {
     });
   })
   .post((req,res,next) => {
-    //  Add new question
+    //  Sanitize input data somehow?
+    let content = req.body.question_content;
+
+    //  Store in database
+    store
+      .addQuestion(content)
+      .then((question_id) => {
+        console.log(`Added question: "${content}" with id: ${question_id}`)
+
+        res.setHeader('Content-Type', 'application/json');
+        res.status(201);
+        res.send({question_id : question_id});
+      });
   });
+
+
 
   router.route('/responses/:question_id')
   .get(function(req, res, next) {
