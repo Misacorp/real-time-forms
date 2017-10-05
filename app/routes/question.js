@@ -1,4 +1,41 @@
-// app/routes/response.js
+/**
+  * @swagger
+  * /api/question:
+  *   put:
+  *     summary: Creates a new question
+  *     description:
+  *       "Creates a new question, returning the newly created question **id**."
+  *     tags:
+  *       - Question
+  *     parameters:
+  *       - name: body
+  *         in: body
+  *         required: true
+  *         schema:
+  *           type: object
+  *           required:
+  *             - content
+  *           properties:
+  *             username:
+  *               type: string
+  *           example: {
+  *             "content": "What is the spiciest dish you have eaten?"
+  *           }
+  *     responses:
+  *       201:
+  *         description: "201: Created"
+  *         schema:
+  *           type: object
+  *           properties:
+  *             id:
+  *               type: integer
+  *         examples:
+  *           application/json: {
+  *             "id": 2
+  *           }
+  */
+
+
 const store = require('../actions/store');
 
 module.exports = function(router) {
@@ -17,9 +54,9 @@ module.exports = function(router) {
       res.send(data);
     });
   })
-  .post((req,res,next) => {
+  .put((req,res,next) => {
     //  Sanitize input data somehow?
-    let content = req.body.question_content;
+    let content = req.body.content;
 
     //  Store in database
     store
@@ -29,7 +66,7 @@ module.exports = function(router) {
 
         res.setHeader('Content-Type', 'application/json');
         res.status(201);
-        res.send({question_id : question_id});
+        res.send({id : question_id});
       });
   });
 

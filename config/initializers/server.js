@@ -19,10 +19,9 @@ const start =  function(cb) {
   app.use(bodyParser.urlencoded({extended: true}));
   app.use(bodyParser.json({type: '*/*'}));
 
+  // Register routes
   logger.info('[SERVER] Initializing routes');
   require('../../app/routes/index')(app);
-
-  app.use(express.static(path.join(__dirname, 'public')));
 
   // Error handler
   app.use(function(err, req, res, next) {
