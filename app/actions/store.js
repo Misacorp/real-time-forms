@@ -49,8 +49,9 @@ module.exports = {
   addQuestion ( content ) {
     let question_id = knex('question')
       .insert({ content })
+      .returning('id')
       .then((id) => {
-        return id;        //  Returns id of just inserted question.
+        return id[0];        //  Returns id of just inserted question.
       });
 
     return question_id;

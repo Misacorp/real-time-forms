@@ -36,7 +36,6 @@ module.exports = function(app) {
   });
 
   router.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
-  console.log(swaggerUi.serve);
   app.use(router);
 
   // Initialize all API routes

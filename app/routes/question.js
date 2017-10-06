@@ -1,7 +1,33 @@
 /**
   * @swagger
   * /api/question:
-  *   put:
+  *   get:
+  *     summary: Gets all created questions
+  *     description:
+  *       "Returns the **id** and **content** of every available question in array format."
+  *     tags:
+  *       - Question
+  *     responses:
+  *       200:
+  *         schema:
+  *           type: object
+  *           properties:
+  *             id:
+  *               type: integer
+  *             content:
+  *               type: string
+  *         examples:
+  *           application/json: [
+  *             {
+  *               "id": 1,
+  *               "content": "What is the spiciest dish you have eaten?"
+  *             },
+  *             {
+  *               "id": 2,
+  *               "content": "How many yellow books have you read?"
+  *             }
+  *           ]
+  *   post:
   *     summary: Creates a new question
   *     description:
   *       "Creates a new question, returning the newly created question **id**."
@@ -23,7 +49,7 @@
   *           }
   *     responses:
   *       201:
-  *         description: "201: Created"
+  *         description: "Resource created and available through location header URI."
   *         schema:
   *           type: object
   *           properties:
@@ -33,19 +59,22 @@
   *           application/json: {
   *             "id": 2
   *           }
+  *       400:
+  *         description: "Bad request. Content parameter missing or empty."
   */
 
 
+const Celebrate = require('celebrate');
+const { Joi } = Celebrate;
 const store = require('../actions/store');
 
 module.exports = function(router) {
   'use strict';
 
-
-
   router.route('/')
+
+  // GET ALL QUESTIONS
   .get((req,res,next) => {
-    //  Get all questions
     store
     .getQuestions()
     .then((data) => {
@@ -54,17 +83,32 @@ module.exports = function(router) {
       res.send(data);
     });
   })
-  .put((req,res,next) => {
-    //  Sanitize input data somehow?
+
+  // CREATE NEW QUESTION
+  .post(
+    // Validate input, returning an error on fail
+    Celebrate({
+      body: Joi.object().keys({
+        content: Joi.string().required()
+      })
+    }),
+    // Input has been validated
+    (req,res,next) => {
+    console.log("Responding to POST /question");
     let content = req.body.content;
 
-    //  Store in database
+    // Request is good. Add an entry.
     store
       .addQuestion(content)
       .then((question_id) => {
-        console.log(`Added question: "${content}" with id: ${question_id}`)
+        console.log(`Added question: "${content}" with id: ${question_id}`);
 
+        // Construct URI where the created resource will be available.
+        let uri = '/question/' + question_id;
+
+        // Send response
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Location', uri);
         res.status(201);
         res.send({id : question_id});
       });
@@ -72,33 +116,21 @@ module.exports = function(router) {
 
 
 
-  router.route('/responses/:question_id')
+  router.route('/:question_id')
+
+  // GET SINGLE QUESTION
   .get(function(req, res, next) {
-    let question_id = req.params.question_id;
-
-    //  Remove all non-numeric characters
-    question_id = question_id.replace(/\D/g,'');
-
-    store
-      .getAnswers(question_id)
-      .then((data) => {
-        // 'data' is in JSON format: {content : value}.
-        // Format data into a simple array.
-        let arr = [];
-        for(let i=0; i < data.length; i++) {
-          arr.push(data[i]['content']);
-        }
-
-        res.setHeader('Content-Type', 'application/json');
-        res.status(200);
-        res.send({
-          id: question_id,
-          responses: arr
-        });
-    })
   })
-  .post(function(req, res, next) {
+
+  // UPDATE QUESTION
+  .patch(function(req, res, next) {
+  })
+
+  // DELETE QUESTION
+  .delete(function(req, res, next) {
   });
 
-  
+
+
+  router.use(Celebrate.errors());  
 };
