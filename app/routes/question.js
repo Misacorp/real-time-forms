@@ -61,6 +61,37 @@
   *           }
   *       400:
   *         description: "Bad request. Content parameter missing or empty."
+  * /api/question/{question_id}:
+  *   get:
+  *     summary: Get a specific question
+  *     description:
+  *       "Returns the **id** and **content** of the specified question."
+  *     tags:
+  *       - Question
+  *     parameters:
+  *       - in: path
+  *         name: question_id
+  *         schema:
+  *           type: integer
+  *         required: true
+  *         description: Numeric ID of the question to get.
+  *     responses:
+  *       200:
+  *         schema:
+  *           type: object
+  *           properties:
+  *             id:
+  *               type: integer
+  *             content:
+  *               type: string
+  *         examples:
+  *           application/json:
+  *             {
+  *               "id": 1,
+  *               "content": "What is the spiciest dish you have eaten?"
+  *             }
+  *       404:
+  *         description: "Not found. No question found with specified **id**."
   */
 
 
@@ -70,6 +101,8 @@ const store = require('../actions/store');
 
 module.exports = function(router) {
   'use strict';
+
+
 
   router.route('/')
 
@@ -119,16 +152,47 @@ module.exports = function(router) {
   router.route('/:question_id')
 
   // GET SINGLE QUESTION
-  .get(function(req, res, next) {
+  .get(
+    // Validate input, returning an error on fail
+    Celebrate({
+      params: Joi.object().keys({
+        question_id: Joi.number().integer().required()
+      })
+    }),
+    // Input has been validated
+    (req,res,next) => {
+    let qid = req.params.question_id;
+    console.log(req.params);
+    console.log("Getting question " + qid);
+
+    store
+    .getQuestion(qid)
+    .then((data) => {
+      data = data[0];
+      console.log(data);
+
+      // No data found
+      if(!data) {
+        res.sendStatus(404);
+      }
+      // Data found successfully
+      else {
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200);
+        res.send(data);
+      }
+    });
   })
 
   // UPDATE QUESTION
-  .patch(function(req, res, next) {
-  })
+  // Don't implement this before authentication.
+  // .patch(function(req, res, next) {
+  // })
 
   // DELETE QUESTION
-  .delete(function(req, res, next) {
-  });
+  // Don't implement this before authentication.
+  // .delete(function(req, res, next) {
+  // });
 
 
 

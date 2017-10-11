@@ -65,6 +65,17 @@ module.exports = {
     return Promise.resolve(promise);
   },
 
+  getQuestion (qid) {
+    let promise = knex('question')
+      .select(['id','content'])
+      .where({
+        id: qid
+      })
+      .returning(['id', 'content']);
+
+    return Promise.resolve(promise);
+  },
+
   getAnswers( qid ) {
     // SELECT DISTINCT content FROM response
     // WHERE question_id = 1;
