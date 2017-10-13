@@ -5,9 +5,15 @@ const knex = require('knex')(require(nconf.get('knexfile')));
 const Promise = require("bluebird");
 
 module.exports = {
-  addResponse ( response ) {
+  addResponses ( response ) {
     return Promise.try(() => {
-      for(let question_id in response) {
+      for(let item in response) {
+        let question_id = response[item].question_id;
+        let content = response[item].content;
+
+        // Don't save anything if response content is empty.
+        if(!content) continue;
+
        /*  Loop through each response, adding it to the 'response' table if
         *  its 'question_id' exists in the 'question' table.
         * 
@@ -24,7 +30,7 @@ module.exports = {
         let selectStatement = knex.select(
           knex.raw('?, ?', [
             question_id,
-            response[question_id]
+            content
           ])
         )
         .from('question')

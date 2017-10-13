@@ -2,7 +2,7 @@
   * @swagger
   * /api/response/{response_id}:
   *   get:
-  *     summary: Get response with given **response_id**
+  *     summary: Get a specific response
   *     description:
   *       "Returns the **id** and **content** of a single response specified by **response_id**."
   *     parameters:
@@ -29,6 +29,78 @@
   *               "id": 1,
   *               "content": "Mexican noodles. They totally exist."
   *             }
+  *       404:
+  *         description: "No response found with specified id."
+  * /api/response/question/{question_id}:
+  *   get:
+  *     summary: Get all unique responses to a specific question
+  *     description:
+  *       "Returns an array of unique response **content** to the specified question."
+  *     parameters:
+  *       - in: path
+  *         name: question_id
+  *         schema:
+  *           type: integer
+  *         required: true
+  *         description: Numeric question ID for which to get responses.
+  *     tags:
+  *       - Question
+  *       - Response
+  *     responses:
+  *       200:
+  *         schema:
+  *           type: object
+  *           properties:
+  *             content:
+  *               type: string
+  *         examples:
+  *           application/json: [
+  *             {
+  *               "content": "Mexican noodles. They totally exist."
+  *             },
+  *             {
+  *               "content": "My family has seven dogs and a giraffe."
+  *             }
+  *           ]
+  *       404:
+  *         description: "No question found with specified id."
+  * /api/response:
+  *   post:
+  *     summary: Creates new responses
+  *     description:
+  *       "Creates new responses from an array of response objects. Responses with no **content** are accepted but ignored. Responses with a nonexistant **question_id** are ignored."
+  *     tags:
+  *       - Response
+  *     parameters:
+  *       - name: body
+  *         in: body
+  *         required: true
+  *         schema:
+  *           type: array
+  *           items:
+  *             type: object
+  *             required:
+  *               - question_id
+  *             properties:
+  *               question_id:
+  *                 type: integer
+  *               content:
+  *                 type: string
+  *           example: [
+  *             {
+  *               "question_id": "3",
+  *               "content": "My family has seven dogs and a giraffe."
+  *             },
+  *             {
+  *               "question_id": "7",
+  *               "content": "Mexican noodles. They totally exist."
+  *             },
+  *           ]
+  *     responses:
+  *       200:
+  *         description: "Every response that corresponded to an existing question was recorded. Responses to nonexistant questions are ignored."
+  *       400:
+  *         description: "Bad request. Question id or content parameters missing."
   */
 
 
@@ -43,44 +115,29 @@ module.exports = function(router) {
 
   router.route('/')
 
-  // GET ALL QUESTIONS
-  .get((req,res,next) => {
-    store
-    .getResponses()
-    .then((data) => {
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200);
-      res.send(data);
-    });
-  })
-
-  // CREATE NEW QUESTION
+  // CREATE NEW RESPONSE
   .post(
     // Validate input, returning an error on fail
     Celebrate({
-      body: Joi.object().keys({
-        content: Joi.string().required()
-      })
+      body: Joi.array().items( 
+        Joi.object().keys({
+          question_id: Joi.string().required(),
+          content: Joi.string().allow('').optional()
+        })
+      )
     }),
     // Input has been validated
     (req,res,next) => {
-    console.log("Responding to POST /question");
-    let content = req.body.content;
+    let content = req.body;
 
     // Request is good. Add an entry.
     store
-      .addResponse(content)
+      .addResponses(content)
       .then((question_id) => {
-        console.log(`Added question: "${content}" with id: ${question_id}`);
-
-        // Construct URI where the created resource will be available.
-        let uri = '/question/' + question_id;
 
         // Send response
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Location', uri);
-        res.status(201);
-        res.send({id : question_id});
+        res.sendStatus(200);
       });
   });
 

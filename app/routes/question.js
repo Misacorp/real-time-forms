@@ -42,7 +42,7 @@
   *           required:
   *             - content
   *           properties:
-  *             username:
+  *             content:
   *               type: string
   *           example: {
   *             "content": "What is the spiciest dish you have eaten?"
