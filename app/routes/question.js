@@ -162,8 +162,6 @@ module.exports = function(router) {
     // Input has been validated
     (req,res,next) => {
     let qid = req.params.question_id;
-    console.log(req.params);
-    console.log("Getting question " + qid);
 
     store
     .getQuestion(qid)

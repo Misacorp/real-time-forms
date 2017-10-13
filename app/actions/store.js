@@ -5,6 +5,39 @@ const knex = require('knex')(require(nconf.get('knexfile')));
 const Promise = require("bluebird");
 
 module.exports = {
+  addQuestion ( content ) {
+    let question_id = knex('question')
+      .insert({ content })
+      .returning('id')
+      .then((id) => {
+        return id[0];        //  Returns id of just inserted question.
+      });
+
+    return question_id;
+  },
+
+
+  getQuestions () {
+    let promise = knex('question')
+      .select(['id','content'])
+      .returning(['id','content']);
+
+    return Promise.resolve(promise);
+  },
+
+
+  getQuestion (qid) {
+    let promise = knex('question')
+      .select(['id','content'])
+      .where({
+        id: qid
+      })
+      .returning(['id', 'content']);
+
+    return Promise.resolve(promise);
+  },
+
+
   addResponses ( response ) {
     return Promise.try(() => {
       for(let item in response) {
@@ -52,55 +85,32 @@ module.exports = {
     });
   },
 
-  addQuestion ( content ) {
-    let question_id = knex('question')
-      .insert({ content })
-      .returning('id')
-      .then((id) => {
-        return id[0];        //  Returns id of just inserted question.
-      });
 
-    return question_id;
+  // Get all unique responses to a question by question id (qid)
+  getResponses ( qid ) {
+    // SELECT DISTINCT content FROM response
+    // WHERE question_id = 1;
+    let promise = knex('response')
+      .select('content')
+      .where({
+        question_id: qid
+      })
+      .distinct('content')
+      .returning('content');
+
+    return Promise.all(promise);
   },
 
-  getQuestions () {
-    let promise = knex('question')
-      .select(['id','content'])
-      .returning(['id','content']);
 
-    return Promise.resolve(promise);
-  },
-
-  getQuestion (qid) {
-    let promise = knex('question')
+  // Get a response by response id
+  getResponse (id) {
+    let promise = knex('response')
       .select(['id','content'])
       .where({
-        id: qid
+        id: id
       })
       .returning(['id', 'content']);
 
     return Promise.resolve(promise);
   },
-
-  getAnswers( qid ) {
-    // SELECT DISTINCT content FROM response
-    // WHERE question_id = 1;
-    let promise = knex('response')
-      .where({
-        question_id: qid
-      })
-      .distinct('content')
-      .select()
-      .returning('content')
-      .catch((e) => {
-        return Promise.reject(new Error('fail')
-          .then(
-            (error) => {},
-            (error) => {
-            console.log(error);
-          }))
-      });
-
-    return Promise.all(promise);
-  }
 }

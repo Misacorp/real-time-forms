@@ -35,7 +35,7 @@
   *   get:
   *     summary: Get all unique responses to a specific question
   *     description:
-  *       "Returns an array of unique response **content** to the specified question."
+  *       "Returns every unique response corresponding to **question_id**."
   *     parameters:
   *       - in: path
   *         name: question_id
@@ -51,17 +51,28 @@
   *         schema:
   *           type: object
   *           properties:
-  *             content:
-  *               type: string
+  *             question:
+  *               type: object
+  *               properties:
+  *                 id: integer
+  *                 content: string
+  *             unique_responses:
+  *               type: array
+  *               items:
+  *                 type: string
   *         examples:
-  *           application/json: [
+  *           application/json:
   *             {
-  *               "content": "Mexican noodles. They totally exist."
-  *             },
-  *             {
-  *               "content": "My family has seven dogs and a giraffe."
+  *               "question": {
+  *                 "id": 4,
+  *                 "content": "What is the spiciest dish you have eaten?"
+  *               },
+  *               "unique_responses": [
+  *                 "Mexican noodles. They totally exist.",
+  *                 "Fireman's Breathmints.",
+  *                 "Chinese fajitas. They're a thing."
+  *               ]
   *             }
-  *           ]
   *       404:
   *         description: "No question found with specified id."
   * /api/response:
@@ -111,8 +122,6 @@ const store = require('../actions/store');
 module.exports = function(router) {
   'use strict';
 
-
-
   router.route('/')
 
   // CREATE NEW RESPONSE
@@ -143,9 +152,44 @@ module.exports = function(router) {
 
 
 
-  router.route('/:question_id')
+  router.route('/:response_id')
 
-  // GET SINGLE QUESTION
+  // GET SINGLE RESPONSE
+  .get(
+    // Validate input, returning an error on fail
+    Celebrate({
+      params: Joi.object().keys({
+        response_id: Joi.number().integer().required()
+      })
+    }),
+    // Input has been validated
+    (req,res,next) => {
+    let rid = req.params.response_id;
+
+    store
+      .getResponse(rid)
+      .then((data) => {
+        data = data[0];
+
+        // No data found
+        if(!data) {
+          res.sendStatus(404);
+        }
+        // Data found successfully
+        else {
+          res.setHeader('Content-Type', 'application/json');
+          res.status(200);
+          res.send(data);
+        }
+      });
+    });
+
+
+
+
+  router.route('/question/:question_id')
+
+  // GET UNIQUE RESPONSES TO QUESTION
   .get(
     // Validate input, returning an error on fail
     Celebrate({
@@ -156,56 +200,43 @@ module.exports = function(router) {
     // Input has been validated
     (req,res,next) => {
     let qid = req.params.question_id;
-    console.log(req.params);
-    console.log("Getting question " + qid);
 
+    // Get question data
+    let q_content = "";
+    store.getQuestion(qid)
+      .then((data) => {
+        q_content = data[0].content;
+      });
+
+    // Get responses
     store
-    .getResponse(qid)
+    .getResponses(qid)
     .then((data) => {
-      data = data[0];
-      console.log(data);
-
       // No data found
       if(!data) {
         res.sendStatus(404);
       }
       // Data found successfully
       else {
+        // Format data into an array
+        let arr = [];
+        for(let i in data) {
+          arr.push(data[i].content);
+        }
+
+        // Send response
         res.setHeader('Content-Type', 'application/json');
         res.status(200);
-        res.send(data);
+        res.send({
+          question: {
+            id: qid,
+            content: q_content
+          },
+          unique_responses: arr
+        });
       }
     });
   })
 
   router.use(Celebrate.errors());  
 };
-
-
-  // router.route('/question/:question_id')
-  // .get(function(req, res, next) {
-  //   let question_id = req.params.question_id;
-
-  //   //  Remove all non-numeric characters
-  //   question_id = question_id.replace(/\D/g,'');
-
-  //   store
-  //     .getAnswers(question_id)
-  //     .then((data) => {
-  //       // 'data' is in JSON format: {content : value}.
-  //       // Format data into a simple array.
-  //       let arr = [];
-  //       for(let i=0; i < data.length; i++) {
-  //         arr.push(data[i]['content']);
-  //       }
-
-  //       res.setHeader('Content-Type', 'application/json');
-  //       res.status(200);
-  //       res.send({
-  //         id: question_id,
-  //         responses: arr
-  //       });
-  //   })
-  // })
-  // .post(function(req, res, next) {
-  // });
