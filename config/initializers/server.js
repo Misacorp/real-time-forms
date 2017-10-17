@@ -38,7 +38,7 @@ const start =  function(cb) {
   });
 
   const port = process.env.PORT || 1337;
-  app.listen(config.get(port));
+  app.listen(port);
   logger.info('[SERVER] Listening on port ' + port);
   
   if (cb) {
