@@ -1,7 +1,11 @@
 "use strict";
 
 const nconf = require('nconf');
-const knex = require('knex')(require(nconf.get('knexfile')));
+
+const config = require('../../knexfile');
+const knex_lib = require('knex');
+const knex = knex_lib(config[process.env.NODE_ENV || 'development']);
+
 const Promise = require("bluebird");
 
 module.exports = {
