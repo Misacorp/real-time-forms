@@ -2,7 +2,8 @@
 "use strict"
 const nconf = require('nconf');
 const store = require('../actions/store');
-const knex = require('knex')(require(nconf.get('knexfile')));
+const knexfile = require('../../knexfile');
+const knex = require('knex')(knexfile[process.env.NODE_ENV || 'development']);
 
 const Promise = require("bluebird");
 

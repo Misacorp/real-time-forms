@@ -2,10 +2,8 @@
 
 const nconf = require('nconf');
 
-const config = require('../../knexfile');
-const knex_lib = require('knex');
-console.log(config[process.env.NODE_ENV || 'development']);
-const knex = knex_lib(config[process.env.NODE_ENV || 'development']);
+const knexfile = require('../../knexfile');
+const knex = require('knex')(knexfile[process.env.NODE_ENV || 'development']);
 
 const Promise = require("bluebird");
 
