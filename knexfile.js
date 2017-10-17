@@ -11,9 +11,7 @@ module.exports = {
 
   production: {
     client: 'mysql',
-    connection: {
-      database: process.env.JAWSDB_MARIA_URL
-    },
+    connection: process.env.JAWSDB_MARIA_URL
     pool: {
       min: 2,
       max: 10
