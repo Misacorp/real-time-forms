@@ -61,6 +61,8 @@
   *           }
   *       400:
   *         description: "Bad request. Content parameter missing or empty."
+  *       404:
+  *         description: "Couldn't create question for current user. User not found."
   * /api/question/{question_id}:
   *   get:
   *     summary: Get a specific question
@@ -157,37 +159,37 @@ module.exports = function(router) {
       return false;
     }
 
-    console.log("Responding to POST /question");
-
     let user_id = '';
+
+    // Callback function that sends a successful response when a question is created.
+    let callback = function(question_id) {
+      // Construct URI where the created resource will be available.
+      let uri = '/question/' + question_id;
+
+      // Send response
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Location', uri);
+      res.status(201);
+      res.send({id : question_id});
+    }
 
     // Get user id by API key
     store
       .getUserByKey( key )
       .then((data) => {
-        user_id = data[0].id;
-
-        if(!user_id) {
-          console.log("Couldn't create question: user doesn't exist.");
-          res.sendStatus(404);
-          return false;
+        if(data.length < 1) {
+          console.log("User doesn't exist yet. Creating...");
+          
+          // Create new user with key
+          store.addUser( key ).then((user_id) => {
+            createUser( content, user_id, callback );
+            return;
+          })
         }
-
-        // Request is good. Add an entry.
-        store
-          .addQuestion(content, user_id)
-          .then((question_id) => {
-            console.log(`Added question: "${content}" with id: ${question_id}`);
-
-            // Construct URI where the created resource will be available.
-            let uri = '/question/' + question_id;
-
-            // Send response
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Location', uri);
-            res.status(201);
-            res.send({id : question_id});
-          });
+        else {
+          user_id = data[0].id;
+          createUser( content, user_id, callback );
+        }
       });
   });
 
@@ -240,3 +242,15 @@ module.exports = function(router) {
 
   router.use(Celebrate.errors());  
 };
+
+
+
+function createUser(content, user_id, cb) {
+  // Request is good. Add an entry.
+  store
+    .addQuestion(content, user_id, cb)
+    .then((question_id) => {
+      console.log(`Added question: "${content}" with id: ${question_id}`);
+      cb(question_id);
+    });
+}
