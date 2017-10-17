@@ -5,9 +5,11 @@ const knex = require('knex')(require(nconf.get('knexfile')));
 const Promise = require("bluebird");
 
 module.exports = {
-  addQuestion ( content ) {
+  addQuestion ( content, uid ) {
+    console.log(`Inserting "${content}" with owner "${uid}" into question.`);
+
     let question_id = knex('question')
-      .insert({ content })
+      .insert({ content: content, owner: uid })
       .returning('id')
       .then((id) => {
         return id[0];        //  Returns id of just inserted question.
@@ -17,9 +19,14 @@ module.exports = {
   },
 
 
-  getQuestions () {
+  // Get questions with a specific API key
+  getQuestions (key) {
     let promise = knex('question')
-      .select(['id','content'])
+      .join('user', 'question.owner', 'user.id')
+      .select(['question.id as id','question.content as content','user.api_key as api_key'])
+      .where({
+        api_key: key
+      })
       .returning(['id','content']);
 
     return Promise.resolve(promise);
@@ -112,5 +119,50 @@ module.exports = {
       .returning(['id', 'content']);
 
     return Promise.resolve(promise);
+  },
+
+
+  getUserByKey ( key ) {
+    console.log("Getting user by key " + key);
+
+    let promise = knex('user')
+      .select(['id', 'api_key'])
+      .where({
+        api_key: key
+      })
+      .returning(['id', 'api_key']);
+
+    return Promise.resolve(promise);
+  },
+
+
+  userExists( key ) {
+    if(!!getUserByKey(key)[0]) {
+      // User exists
+      return true;
+    } else {
+      return false;
+    }
+  },
+
+
+  getUsers () {
+    let promise = knex('user')
+      .select(['id','api_key'])
+      .returning(['id','api_key']);
+
+    return Promise.resolve(promise);
+  },
+
+
+  addUser ( api_key ) {
+    let user_id = knex('user')
+      .insert({ api_key })
+      .returning('id')
+      .then((id) => {
+        return id[0];        //  Returns id of just inserted user.
+      });
+
+    return user_id;
   },
 }

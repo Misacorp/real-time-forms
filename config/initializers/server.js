@@ -1,6 +1,7 @@
 // config/initializers/server.js
 
-const express = require('express');
+const express = require('express')
+const cors = require('cors');
 const path = require('path');
 // Local dependecies
 const config = require('nconf');
@@ -15,6 +16,9 @@ const start =  function(cb) {
   'use strict';
   // Configure express 
   app = express();
+
+  // Enable CORS for all origins
+  app.use(cors());
 
   app.use(bodyParser.urlencoded({extended: true}));
   app.use(bodyParser.json({type: '*/*'}));

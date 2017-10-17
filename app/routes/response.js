@@ -44,7 +44,6 @@
   *         required: true
   *         description: Numeric question ID for which to get responses.
   *     tags:
-  *       - Question
   *       - Response
   *     responses:
   *       200:

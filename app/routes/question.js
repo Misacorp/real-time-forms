@@ -90,6 +90,8 @@
   *               "id": 1,
   *               "content": "What is the spiciest dish you have eaten?"
   *             }
+  *       403:
+  *         description: No Authorization header was provided, or header was invalid.
   *       404:
   *         description: "Not found. No question found with specified **id**."
   */
@@ -106,10 +108,25 @@ module.exports = function(router) {
 
   router.route('/')
 
-  // GET ALL QUESTIONS
-  .get((req,res,next) => {
+  // GET ALL QUESTIONS USER HAS ACCESS TO
+  .get(
+    Celebrate({
+      headers: Joi.object().keys({
+        'authorization': Joi.string().required()
+      }).options({ allowUnknown: true })
+    }),
+    (req,res,next) => {
+
+    // Store user's API key
+    let key = req.headers.authorization;
+    if(!key) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
+
     store
-    .getQuestions()
+    .getQuestions( key )
     .then((data) => {
       res.setHeader('Content-Type', 'application/json');
       res.status(200);
@@ -121,29 +138,56 @@ module.exports = function(router) {
   .post(
     // Validate input, returning an error on fail
     Celebrate({
+      headers: Joi.object().keys({
+        'authorization': Joi.string().required()
+      }).options({ allowUnknown: true }),
       body: Joi.object().keys({
         content: Joi.string().required()
       })
     }),
     // Input has been validated
     (req,res,next) => {
-    console.log("Responding to POST /question");
+
+    // Store request content and user's API key
     let content = req.body.content;
+    let key = req.headers.authorization;
+    if(!key) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
 
-    // Request is good. Add an entry.
+    console.log("Responding to POST /question");
+
+    let user_id = '';
+
+    // Get user id by API key
     store
-      .addQuestion(content)
-      .then((question_id) => {
-        console.log(`Added question: "${content}" with id: ${question_id}`);
+      .getUserByKey( key )
+      .then((data) => {
+        user_id = data[0].id;
 
-        // Construct URI where the created resource will be available.
-        let uri = '/question/' + question_id;
+        if(!user_id) {
+          console.log("Couldn't create question: user doesn't exist.");
+          res.sendStatus(404);
+          return false;
+        }
 
-        // Send response
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Location', uri);
-        res.status(201);
-        res.send({id : question_id});
+        // Request is good. Add an entry.
+        store
+          .addQuestion(content, user_id)
+          .then((question_id) => {
+            console.log(`Added question: "${content}" with id: ${question_id}`);
+
+            // Construct URI where the created resource will be available.
+            let uri = '/question/' + question_id;
+
+            // Send response
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Location', uri);
+            res.status(201);
+            res.send({id : question_id});
+          });
       });
   });
 
