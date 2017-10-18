@@ -27,6 +27,10 @@
   *               "api_key": "API_KEY_2"
   *             }
   *           ]
+  *       400:
+  *         description: "Bad request. Authorization header missing or empty."
+  *       403:
+  *         description: "Authorization header does not match API admin secret."
   *   post:
   *     summary: Creates a new user
   *     description:
@@ -60,7 +64,7 @@
   *             "id": 2
   *           }
   *       400:
-  *         description: "Bad request. API key parameter missing or empty."
+  *         description: "Bad request. Authorization header missing or empty."
   * /api/user/{api_key}:
   *   get:
   *     summary: Get a user by API key
@@ -104,8 +108,23 @@ module.exports = function(router) {
 
   router.route('/')
 
-  // GET ALL QUESTIONS
-  .get((req,res,next) => {
+  // GET ALL USERS
+  .get(
+    Celebrate({
+      headers: Joi.object().keys({
+        'authorization': Joi.string().required()
+      }).options({ allowUnknown: true })
+    }),
+    (req,res,next) => {
+
+    // Store user's API key
+    let key = req.headers.authorization;
+    if(!key || key != process.env.API_ADMIN_SECRET) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
+
     store
     .getUsers()
     .then((data) => {
@@ -115,7 +134,7 @@ module.exports = function(router) {
     });
   })
 
-  // CREATE NEW QUESTION
+  // CREATE NEW USER
   .post(
     // Validate input, returning an error on fail
     Celebrate({

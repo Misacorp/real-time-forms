@@ -26,7 +26,7 @@ module.exports = {
   getQuestions (key) {
     let promise = knex('question')
       .join('user', 'question.owner', 'user.id')
-      .select(['question.id as id','question.content as content','user.api_key as api_key'])
+      .select(['question.id as id','question.content as content'])
       .where({
         api_key: key
       })
@@ -36,13 +36,15 @@ module.exports = {
   },
 
 
-  getQuestion (qid) {
+  getQuestion (qid, key) {
     let promise = knex('question')
-      .select(['id','content'])
+      .join('user', 'question.owner', 'user.id')
+      .select(['question.id as id','question.content as content'])
       .where({
-        id: qid
+        'question.id': qid,
+        api_key: key
       })
-      .returning(['id', 'content']);
+      .returning(['id','content']);
 
     return Promise.resolve(promise);
   },

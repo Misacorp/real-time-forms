@@ -4,7 +4,8 @@
   "description": "Manage form autocomplete suggestions based on previous answers.",
   "main": "index.js",
   "scripts": {
-    "start": "node .",
+    "start": "node index.js",
+    "dev": "API_ADMIN_SECRET=dev node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

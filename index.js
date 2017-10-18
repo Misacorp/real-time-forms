@@ -16,7 +16,7 @@ nconf.argv();
 // Load environment variables
 nconf.env();
 // Load config file for the environment
-require('./config/environments/' + nconf.get('NODE_ENV'));
+require('./config/environments/' + (nconf.get('NODE_ENV') || 'development'));
 
 logger.info('[APP] Starting server initialization');
 

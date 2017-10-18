@@ -150,16 +150,13 @@ module.exports = function(router) {
     // Input has been validated
     (req,res,next) => {
 
-    // Store request content and user's API key
-    let content = req.body.content;
+    // Check if user is authorized.
     let key = req.headers.authorization;
     if(!key) {
       // If no key was provided, return Forbidden
       res.sendStatus(403);
       return false;
     }
-
-    let user_id = '';
 
     // Callback function that sends a successful response when a question is created.
     let callback = function(question_id) {
@@ -173,6 +170,9 @@ module.exports = function(router) {
       res.send({id : question_id});
     }
 
+    let user_id = '';
+    let content = req.body.content;
+
     // Get user id by API key
     store
       .getUserByKey( key )
@@ -182,13 +182,15 @@ module.exports = function(router) {
           
           // Create new user with key
           store.addUser( key ).then((user_id) => {
-            createUser( content, user_id, callback );
+            // User created, now create the question
+            createQuestion( content, user_id, callback );
             return;
           })
         }
         else {
+          // User exists, create the question
           user_id = data[0].id;
-          createUser( content, user_id, callback );
+          createQuestion( content, user_id, callback );
         }
       });
   });
@@ -207,10 +209,19 @@ module.exports = function(router) {
     }),
     // Input has been validated
     (req,res,next) => {
+
+    // Check if user is authorized
+    let key = req.headers.authorization;
+    if(!key) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
+
     let qid = req.params.question_id;
 
     store
-    .getQuestion(qid)
+    .getQuestion(qid, key)
     .then((data) => {
       data = data[0];
       console.log(data);
@@ -245,7 +256,7 @@ module.exports = function(router) {
 
 
 
-function createUser(content, user_id, cb) {
+function createQuestion(content, user_id, cb) {
   // Request is good. Add an entry.
   store
     .addQuestion(content, user_id, cb)
