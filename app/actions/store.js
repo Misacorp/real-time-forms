@@ -50,7 +50,7 @@ module.exports = {
   },
 
 
-  addResponses ( response ) {
+  addResponses ( response, key ) {
     return Promise.try(() => {
       for(let item in response) {
         let question_id = response[item].question_id;
@@ -60,26 +60,55 @@ module.exports = {
         if(!content) continue;
 
        /*  Loop through each response, adding it to the 'response' table if
-        *  its 'question_id' exists in the 'question' table.
+        *  its 'question_id' exists in the 'question' table AND the question's
+        *  owner has the provided 'key'.
         * 
         *  SQL queries in a loop isn't really a good idea, but I have yet
         *  to figure out how to do this with one single query.
         */
 
         // INSERT INTO response (question_id, content)
-        // SELECT '2', 'Vastaus toiseen kysymykseen'
+        // SELECT '2', 'Response to question two'
         // FROM question
         // WHERE question.id = '2'
 
         //  Construct SELECT statement
-        let selectStatement = knex.select(
-          knex.raw('?, ?', [
-            question_id,
-            content
-          ])
-        )
-        .from('question')
-        .where('question.id', question_id);
+        // let promise = knex('question')
+        //   .join('user', 'question.owner', 'user.id')
+        //   .select(['question.id as id','question.content as content'])
+        //   .where({
+        //     'question.id': qid,
+        //     api_key: key
+        //   })
+        //   .returning(['id','content']);
+
+
+        let selectStatement = knex('question')
+          .join('user', 'question.owner', 'user.id')
+          .select(
+            knex.raw('?, ?', [
+              question_id,
+              content
+            ])
+          )
+          .from('question')
+          .where({
+            'question.id': question_id,
+            'user.api_key': key
+          });
+
+
+        // let selectStatement = knex.select(
+        //   knex.raw('?, ?', [
+        //     question_id,
+        //     content
+        //   ])
+        // )
+        // .from('question')
+        // .where({
+        //   'question.id', question_id,
+        //   ''
+        // });
 
         //  Construct INSERT statement
         knex(
@@ -89,7 +118,7 @@ module.exports = {
           )
         )
         .insert(selectStatement)
-        .then(() => {
+        .then((data) => {
           //  Do something here. The very presence of this .then() function
           //  actually makes the query do its thing.
         });

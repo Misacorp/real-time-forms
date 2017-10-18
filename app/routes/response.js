@@ -1,36 +1,5 @@
 /**
   * @swagger
-  * /api/response/{response_id}:
-  *   get:
-  *     summary: Get a specific response
-  *     description:
-  *       "Returns the **id** and **content** of a single response specified by **response_id**."
-  *     parameters:
-  *       - in: path
-  *         name: response_id
-  *         schema:
-  *           type: integer
-  *         required: true
-  *         description: Numeric ID of the response to get.
-  *     tags:
-  *       - Response
-  *     responses:
-  *       200:
-  *         schema:
-  *           type: object
-  *           properties:
-  *             id:
-  *               type: integer
-  *             content:
-  *               type: string
-  *         examples:
-  *           application/json:
-  *             {
-  *               "id": 1,
-  *               "content": "Mexican noodles. They totally exist."
-  *             }
-  *       404:
-  *         description: "No response found with specified id."
   * /api/response:
   *   post:
   *     summary: Creates new responses
@@ -84,6 +53,9 @@ module.exports = function(router) {
   .post(
     // Validate input, returning an error on fail
     Celebrate({
+      headers: Joi.object().keys({
+        'authorization': Joi.string().required()
+      }).options({ allowUnknown: true }),
       body: Joi.array().items( 
         Joi.object().keys({
           question_id: Joi.string().required(),
@@ -93,52 +65,27 @@ module.exports = function(router) {
     }),
     // Input has been validated
     (req,res,next) => {
+
+    // Authorize user
+    let key = req.headers.authorization;
+    if(!key) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
+
     let content = req.body;
 
     // Request is good. Add an entry.
     store
-      .addResponses(content)
-      .then((question_id) => {
+      .addResponses(content, key)
+      .then(() => {
 
         // Send response
         res.setHeader('Content-Type', 'application/json');
         res.sendStatus(200);
       });
   });
-
-
-
-  router.route('/:response_id')
-
-  // GET SINGLE RESPONSE
-  .get(
-    // Validate input, returning an error on fail
-    Celebrate({
-      params: Joi.object().keys({
-        response_id: Joi.number().integer().required()
-      })
-    }),
-    // Input has been validated
-    (req,res,next) => {
-    let rid = req.params.response_id;
-
-    store
-      .getResponse(rid)
-      .then((data) => {
-        data = data[0];
-
-        // No data found
-        if(!data) {
-          res.sendStatus(404);
-        }
-        // Data found successfully
-        else {
-          res.setHeader('Content-Type', 'application/json');
-          res.status(200);
-          res.send(data);
-        }
-      });
-    });
 
   router.use(Celebrate.errors());  
 };
