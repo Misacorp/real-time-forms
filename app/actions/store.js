@@ -102,13 +102,27 @@ module.exports = {
   getResponses ( qid ) {
     // SELECT DISTINCT content FROM response
     // WHERE question_id = 1;
+    // let promise = knex('response')
+    //   .select('content')
+    //   .where({
+    //     question_id: qid
+    //   })
+    //   .distinct('content')
+    //   .returning('content');
+
+    // SELECT content, COUNT(content) as num
+    // FROM response
+    // GROUP BY content
+    // ORDER BY num desc
     let promise = knex('response')
       .select('content')
+      .count('content as num')
       .where({
         question_id: qid
       })
-      .distinct('content')
-      .returning('content');
+      .groupBy('content')
+      .orderBy('num', 'desc')
+      .returning('content', 'num');
 
     return Promise.all(promise);
   },

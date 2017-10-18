@@ -96,6 +96,62 @@
   *         description: No Authorization header was provided, or header was invalid.
   *       404:
   *         description: "Not found. No question found with specified **id**."
+  * /api/question/{question_id}/response:
+  *   get:
+  *     summary: Get all unique responses to a specific question
+  *     description:
+  *       "Returns every unique response corresponding to **question_id**."
+  *     parameters:
+  *       - in: path
+  *         name: question_id
+  *         schema:
+  *           type: integer
+  *         required: true
+  *         description: Numeric question ID for which to get responses.
+  *     tags:
+  *       - Response
+  *       - Question
+  *     responses:
+  *       200:
+  *         schema:
+  *           type: object
+  *           properties:
+  *             question:
+  *               type: object
+  *               properties:
+  *                 id: integer
+  *                 content: string
+  *             unique_responses:
+  *               type: array
+  *               items:
+  *                 type: object
+  *                 properties:
+  *                   content: string
+  *                   count: integer
+  *         examples:
+  *           application/json:
+  *             {
+  *               "question": {
+  *                 "id": 4,
+  *                 "content": "What is the spiciest dish you have eaten?"
+  *               },
+  *               "unique_responses": [
+  *                 {
+  *                   content: "Mexican noodles. They totally exist.",
+  *                   count: 5
+  *                 },
+  *                 {
+  *                   content: "Fireman's Breathmints.",
+  *                   count: 2
+  *                 },
+  *                 {
+  *                   content: "Chinese fajitas. They're a thing.",
+  *                   count: 1
+  *                 }
+  *               ]
+  *             }
+  *       404:
+  *         description: "No question found with specified id and provided authorization."
   */
 
 
@@ -237,6 +293,85 @@ module.exports = function(router) {
         res.send(data);
       }
     });
+  })
+
+
+
+
+
+  router.route('/:question_id/response')
+
+  // GET UNIQUE RESPONSES TO QUESTION
+  .get(
+    // Validate input, returning an error on fail
+    Celebrate({
+      headers: Joi.object().keys({
+        'authorization': Joi.string().required()
+      }).options({ allowUnknown: true }),
+      params: Joi.object().keys({
+        question_id: Joi.number().integer().required()
+      })
+    }),
+    // Input has been validated
+    (req,res,next) => {
+
+    // Authorize user
+    let key = req.headers.authorization;
+    if(!key) {
+      // If no key was provided, return Forbidden
+      res.sendStatus(403);
+      return false;
+    }
+
+    let qid = req.params.question_id;
+
+    // Get question data
+    let q_content = "";
+    store.getQuestion(qid, key)
+      .then((data) => {
+        if(!data[0]) { 
+          // Question not found with provided API key
+          res.sendStatus(404);
+          return false;
+        }
+        else {
+          // Question found, get responses
+          q_content = data[0].content;
+
+          // Get responses
+          store
+          .getResponses(qid, key)
+          .then((data) => {
+            if(!data) {
+              // No responses found
+              res.sendStatus(404);
+            }
+            else {
+              // Responses found
+              // Format data into an array
+              let arr = [];
+              for(let i in data) {
+                let response = {
+                  content: data[i].content,
+                  count: data[i].num
+                }
+                arr.push(response);
+              }
+
+              // Send response
+              res.setHeader('Content-Type', 'application/json');
+              res.status(200);
+              res.send({
+                question: {
+                  id: qid,
+                  content: q_content
+                },
+                unique_responses: arr
+              });
+            }
+          });
+        }
+      });
   })
 
   // UPDATE QUESTION

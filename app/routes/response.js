@@ -31,49 +31,6 @@
   *             }
   *       404:
   *         description: "No response found with specified id."
-  * /api/response/question/{question_id}:
-  *   get:
-  *     summary: Get all unique responses to a specific question
-  *     description:
-  *       "Returns every unique response corresponding to **question_id**."
-  *     parameters:
-  *       - in: path
-  *         name: question_id
-  *         schema:
-  *           type: integer
-  *         required: true
-  *         description: Numeric question ID for which to get responses.
-  *     tags:
-  *       - Response
-  *     responses:
-  *       200:
-  *         schema:
-  *           type: object
-  *           properties:
-  *             question:
-  *               type: object
-  *               properties:
-  *                 id: integer
-  *                 content: string
-  *             unique_responses:
-  *               type: array
-  *               items:
-  *                 type: string
-  *         examples:
-  *           application/json:
-  *             {
-  *               "question": {
-  *                 "id": 4,
-  *                 "content": "What is the spiciest dish you have eaten?"
-  *               },
-  *               "unique_responses": [
-  *                 "Mexican noodles. They totally exist.",
-  *                 "Fireman's Breathmints.",
-  *                 "Chinese fajitas. They're a thing."
-  *               ]
-  *             }
-  *       404:
-  *         description: "No question found with specified id."
   * /api/response:
   *   post:
   *     summary: Creates new responses
@@ -182,60 +139,6 @@ module.exports = function(router) {
         }
       });
     });
-
-
-
-
-  router.route('/question/:question_id')
-
-  // GET UNIQUE RESPONSES TO QUESTION
-  .get(
-    // Validate input, returning an error on fail
-    Celebrate({
-      params: Joi.object().keys({
-        question_id: Joi.number().integer().required()
-      })
-    }),
-    // Input has been validated
-    (req,res,next) => {
-    let qid = req.params.question_id;
-
-    // Get question data
-    let q_content = "";
-    store.getQuestion(qid)
-      .then((data) => {
-        q_content = data[0].content;
-      });
-
-    // Get responses
-    store
-    .getResponses(qid)
-    .then((data) => {
-      // No data found
-      if(!data) {
-        res.sendStatus(404);
-      }
-      // Data found successfully
-      else {
-        // Format data into an array
-        let arr = [];
-        for(let i in data) {
-          arr.push(data[i].content);
-        }
-
-        // Send response
-        res.setHeader('Content-Type', 'application/json');
-        res.status(200);
-        res.send({
-          question: {
-            id: qid,
-            content: q_content
-          },
-          unique_responses: arr
-        });
-      }
-    });
-  })
 
   router.use(Celebrate.errors());  
 };
