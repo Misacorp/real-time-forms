@@ -150,6 +150,8 @@
   *                 }
   *               ]
   *             }
+  *       400:
+  *         description: "Bad request. Authorization header missing or invalid."
   *       404:
   *         description: "No question found with specified id and provided authorization."
   */
