@@ -58,7 +58,7 @@ module.exports = function(router) {
       }).options({ allowUnknown: true }),
       body: Joi.array().items( 
         Joi.object().keys({
-          question_id: Joi.string().required(),
+          question_id: Joi.number().integer().required(),
           content: Joi.string().allow('').optional()
         })
       )
