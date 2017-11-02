@@ -1,4 +1,14 @@
-# Setup instructions
+# Real Time Forms
+
+Ever wanted to offer form autocomplete suggestions based on previous responses to the same question? Real Time Forms aims to do just that.
+
+At its current state, this API is simply a limited and questionably optimized database interaction tool. Creating an interface to interact with it won't likely be any easier than creating a form question-response interface for your existing database. However, this may be good place to start if you want an independant database solely for this purpose.
+
+## Documentation
+
+Real Time Forms uses Swagger for API documentation. Once your service is running, head over to *customdomain/docs* for a list of available endpoints and ways to interact with them.
+
+## Setup instructions
 
 Set up the Vagrant environment for this project with the following steps.
 
@@ -10,7 +20,7 @@ Set up the Vagrant environment for this project with the following steps.
 
 Your database is now set up!
 
-## Set up Node
+### Set up Node
 
 Run the following commands to install Node using NVM.
 
@@ -21,18 +31,18 @@ Run the following commands to install Node using NVM.
 
 You now have Node set up!
 
-## Install Node modules
+### Install Node modules
 
 The following is a non-exhaustive list of modules this project depends on: `express, knex, body-parser, mysql`. Follow these steps to install them:
 
 1. `cd /var/www/html/`
-2. `npm i knex mysql express body-parser --save`
-3. `npm i knex -g`
+2. Install dependencies `npm instal`
+3. Install knex globally `npm i knex -g`
 4. Run knex migrations to bring database up to speed: `knex migrate:latest`
 
 Done! Your environment should be set for development. Some day I hope to have this all neatly in a Vagrant provisioning script.
 
-## Connecting to Vagrant MySQL server from host
+### Connecting to Vagrant MySQL server from host
 
 (Optional) Follow these steps to connect to the MySQL server running on your Vagrant machine with tools like Emma.
 
