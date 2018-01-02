@@ -2,55 +2,28 @@ const changeCase = require('change-case');
 const express = require('express');
 const routes = require('require-dir')();
 
-const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const swaggerConf = require('../../config/swaggerDoc.json');
 
-module.exports = function(app) {
-  'use strict';
-
-  let router = express.Router();
+module.exports = function initializeApp(app) {
+  const router = express.Router();
 
   // Initialize documentation route
-  const spec = swaggerJSDoc({
-    swaggerDefinition: {
-      info: {
-        title: 'Real Time Forms',
-        version: '0.0.01'
-      },
-      produces: ['application/json'],
-      consumes: ['application/json'],
-      securityDefinitions: {
-        jwt: {
-          type: 'apiKey',
-          name: 'Authorization',
-          in: 'header'
-        }
-      },
-      security: [
-        { jwt: [] }
-      ]
-    },
-    apis: [
-      'app/routes/*.js'
-    ]
-  });
-
-  router.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
+  console.log(swaggerConf);
+  router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerConf));
   app.use(router);
 
   // Initialize all API routes
-  Object.keys(routes).forEach(function(routeName) {
-    let router = express.Router();
-    // You can add some middleware here 
-    // router.use(someMiddleware);
+  Object.keys(routes).forEach((routeName) => {
+    const router2 = express.Router();
 
     // Initialize the route to add its functionality to router
-    require('./' + routeName)(router);
-    
+    require(`./${routeName}`)(router2);
+
     // Add router to the speficied route name in the app
-    let route_prefix = '/api/';
-    let route = route_prefix + changeCase.paramCase(routeName);
-    app.use(route, router);
+    const routePrefix = '/api/';
+    const route = routePrefix + changeCase.paramCase(routeName);
+    app.use(route, router2);
     console.log(`info: [SERVER] Added route ${route}`);
-  }); 
+  });
 };

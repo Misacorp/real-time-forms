@@ -1,60 +1,58 @@
-"use strict";
-
 const nconf = require('nconf');
 
 const knexfile = require('../../knexfile');
 const knex = require('knex')(knexfile[process.env.NODE_ENV || 'development']);
 
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 
 module.exports = {
-  addQuestion ( content, uid ) {
+  addQuestion(content, uid) {
     console.log(`Inserting "${content}" with owner "${uid}" into question.`);
 
-    let question_id = knex('question')
-      .insert({ content: content, owner: uid })
+    const questionId = knex('question')
+      .insert({ content, owner: uid })
       .returning('id')
-      .then((id) => {
-        return id[0];        //  Returns id of just inserted question.
-      });
+      .then(id =>
+        //  Returns id of just inserted question.
+        id[0]);
 
-    return question_id;
+    return questionId;
   },
 
 
   // Get questions with a specific API key
-  getQuestions (key) {
-    let promise = knex('question')
+  getQuestions(key) {
+    const promise = knex('question')
       .join('user', 'question.owner', 'user.id')
-      .select(['question.id as id','question.content as content'])
+      .select(['question.id as id', 'question.content as content'])
       .where({
-        api_key: key
+        api_key: key,
       })
-      .returning(['id','content']);
+      .returning(['id', 'content']);
 
     return Promise.resolve(promise);
   },
 
 
-  getQuestion (qid, key) {
-    let promise = knex('question')
+  getQuestion(qid, key) {
+    const promise = knex('question')
       .join('user', 'question.owner', 'user.id')
-      .select(['question.id as id','question.content as content'])
+      .select(['question.id as id', 'question.content as content'])
       .where({
         'question.id': qid,
-        api_key: key
+        api_key: key,
       })
-      .returning(['id','content']);
+      .returning(['id', 'content']);
 
     return Promise.resolve(promise);
   },
 
 
-  addResponses ( response, key ) {
+  addResponses(response, key) {
     return Promise.try(() => {
-      for(let item in response) {
-        let question_id = response[item].question_id;
-        let content = response[item].content;
+      for(const item in response) {
+        const question_id = response[item].question_id;
+        const content = response[item].content;
 
         // Don't save anything if response content is empty.
         if(!content) continue;
@@ -83,18 +81,18 @@ module.exports = {
         //   .returning(['id','content']);
 
 
-        let selectStatement = knex('question')
+        const selectStatement = knex('question')
           .join('user', 'question.owner', 'user.id')
           .select(
             knex.raw('?, ?', [
               question_id,
-              content
-            ])
+              content,
+            ]),
           )
           .from('question')
           .where({
             'question.id': question_id,
-            'user.api_key': key
+            'user.api_key': key,
           });
 
 
@@ -114,8 +112,8 @@ module.exports = {
         knex(
           knex.raw(
             '?? (??, ??)',
-             ['response', 'question_id', 'content']
-          )
+             ['response', 'question_id', 'content'],
+          ),
         )
         .insert(selectStatement)
         .then((data) => {
@@ -128,7 +126,7 @@ module.exports = {
 
 
   // Get all unique responses to a question by question id (qid)
-  getResponses ( qid ) {
+  getResponses(qid) {
     // SELECT DISTINCT content FROM response
     // WHERE question_id = 1;
     // let promise = knex('response')
@@ -143,11 +141,11 @@ module.exports = {
     // FROM response
     // GROUP BY content
     // ORDER BY num desc
-    let promise = knex('response')
+    const promise = knex('response')
       .select('content')
       .count('content as num')
       .where({
-        question_id: qid
+        question_id: qid,
       })
       .groupBy('content')
       .orderBy('num', 'desc')
@@ -158,11 +156,11 @@ module.exports = {
 
 
   // Get a response by response id
-  getResponse (id) {
-    let promise = knex('response')
-      .select(['id','content'])
+  getResponse(id) {
+    const promise = knex('response')
+      .select(['id', 'content'])
       .where({
-        id: id
+        id,
       })
       .returning(['id', 'content']);
 
@@ -170,13 +168,19 @@ module.exports = {
   },
 
 
-  getUserByKey ( key ) {
-    console.log("Getting user by key " + key);
+  // Delete an array of responses by id
+  deleteResponse(ids) {
+    console.log(`Deleting responses with the following ids: ${ids}`);
+  },
 
-    let promise = knex('user')
+
+  getUserByKey(key) {
+    console.log(`Getting user by key ${key}`);
+
+    const promise = knex('user')
       .select(['id', 'api_key'])
       .where({
-        api_key: key
+        api_key: key,
       })
       .returning(['id', 'api_key']);
 
@@ -184,33 +188,32 @@ module.exports = {
   },
 
 
-  userExists( key ) {
-    if(!!getUserByKey(key)[0]) {
+  userExists(key) {
+    if (this.getUserByKey(key)[0]) {
       // User exists
       return true;
-    } else {
-      return false;
     }
+    return false;
   },
 
 
-  getUsers () {
-    let promise = knex('user')
-      .select(['id','api_key'])
-      .returning(['id','api_key']);
+  getUsers() {
+    const promise = knex('user')
+      .select(['id', 'api_key'])
+      .returning(['id', 'api_key']);
 
     return Promise.resolve(promise);
   },
 
 
-  addUser ( api_key ) {
-    let user_id = knex('user')
-      .insert({ api_key })
+  addUser(apiKey) {
+    const userId = knex('user')
+      .insert({ apiKey })
       .returning('id')
-      .then((id) => {
-        return id[0];        //  Returns id of just inserted user.
-      });
+      .then(id =>
+        //  Returns id of just inserted user.
+        id[0]);
 
-    return user_id;
+    return userId;
   },
-}
+};

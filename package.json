@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "API_ADMIN_SECRET=dev node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "swagger-jsdoc-generator config/swaggerSpec.js > config/swaggerDoc.json && API_ADMIN_SECRET=dev NODE_ENV=development node index.js",
+    "test": "cat config/swaggerDoc.json | swagger-test"
   },
   "keywords": [
     "form",
@@ -21,6 +21,7 @@
     "change-case": "^3.0.1",
     "cors": "^2.8.4",
     "dotenv": "^4.0.0",
+    "eslint": "^4.14.0",
     "express": "^4.16.1",
     "express-formidable": "^1.0.0",
     "knex": "^0.13.0",
@@ -32,5 +33,10 @@
     "swagger-ui": "^3.3.1",
     "swagger-ui-express": "^2.0.8",
     "winston": "^2.4.0"
+  },
+  "devDependencies": {
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0",
+    "swagger-jsdoc-generator": "^1.0.3"
   }
 }

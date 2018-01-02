@@ -9,6 +9,7 @@
   *       - User
   *     responses:
   *       200:
+  *         description: An array of user ids and their respective API keys.
   *         schema:
   *           type: object
   *           properties:
@@ -35,41 +36,38 @@
 
 
 const Celebrate = require('celebrate');
-const { Joi } = Celebrate;
 const store = require('../actions/store');
 
-module.exports = function(router) {
-  'use strict';
+const { Joi } = Celebrate;
 
-
-
+module.exports = function userRoute(router) {
   router.route('/')
-
   // GET ALL USERS
-  .get(
-    Celebrate({
-      headers: Joi.object().keys({
-        'authorization': Joi.string().required()
-      }).options({ allowUnknown: true })
-    }),
-    (req,res,next) => {
+    .get(
+      Celebrate({
+        headers: Joi.object().keys({
+          authorization: Joi.string().required(),
+        }).options({ allowUnknown: true }),
+      }),
+      (req, res) => {
+        // Check authorization
+        const key = req.headers.authorization;
+        if (!key || key !== process.env.API_ADMIN_SECRET) {
+          // If no key was provided, return Forbidden
+          res.sendStatus(403);
+          return false;
+        }
 
-    // Check authorization
-    let key = req.headers.authorization;
-    if(!key || key != process.env.API_ADMIN_SECRET) {
-      // If no key was provided, return Forbidden
-      res.sendStatus(403);
-      return false;
-    }
+        store
+          .getUsers()
+          .then((data) => {
+            res.setHeader('Content-Type', 'application/json');
+            res.status(200);
+            res.send(data);
+          });
+        return true;
+      },
+    );
 
-    store
-    .getUsers()
-    .then((data) => {
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200);
-      res.send(data);
-    });
-  })
-
-  router.use(Celebrate.errors());  
+  router.use(Celebrate.errors());
 };

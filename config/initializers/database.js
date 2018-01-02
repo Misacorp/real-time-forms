@@ -1,8 +1,5 @@
-
 // config/initializers/database.js
 
-module.exports = function(cb) {
-  'use strict';
-  
+module.exports = function initializeDatabase(cb) {
   cb();
 };
