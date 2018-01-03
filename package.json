@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "swagger-jsdoc-generator config/swaggerSpec.js > config/swaggerDoc.json && API_ADMIN_SECRET=dev NODE_ENV=development node index.js",
-    "test": "cat config/swaggerDoc.json | swagger-test"
+    "test": "pkill --signal SIGINT rtf && swagger-jsdoc-generator config/swaggerSpec.js > config/swaggerDoc.json && dredd",
+    "stop": "pkill --signal SIGINT rtf"
   },
   "keywords": [
     "form",
@@ -15,23 +16,26 @@
   "author": "Misacorp",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.5.0",
+    "async": "^2.6.0",
+    "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "celebrate": "^5.0.1",
     "change-case": "^3.0.1",
     "cors": "^2.8.4",
     "dotenv": "^4.0.0",
     "eslint": "^4.14.0",
-    "express": "^4.16.1",
+    "express": "^4.16.2",
     "express-formidable": "^1.0.0",
+    "hooks": "^0.3.2",
     "knex": "^0.13.0",
-    "mysql": "^2.14.1",
+    "knex-cleaner": "^1.1.4",
+    "mysql": "^2.15.0",
     "nconf": "^0.8.5",
-    "nodemon": "^1.12.1",
+    "nodemon": "^1.14.7",
     "require-dir": "^0.3.2",
     "swagger-jsdoc": "^1.9.7",
-    "swagger-ui": "^3.3.1",
-    "swagger-ui-express": "^2.0.8",
+    "swagger-ui": "^3.8.1",
+    "swagger-ui-express": "^2.0.13",
     "winston": "^2.4.0"
   },
   "devDependencies": {

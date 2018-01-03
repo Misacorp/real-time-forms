@@ -1,7 +1,5 @@
-const nconf = require('nconf');
-
 const knexfile = require('../../knexfile');
-const knex = require('knex')(knexfile[process.env.NODE_ENV || 'development']);
+const knex = require('knex')(knexfile[process.env.NODE_ENV || 'development']);
 
 const Promise = require('bluebird');
 
@@ -208,7 +206,7 @@ module.exports = {
 
   addUser(apiKey) {
     const userId = knex('user')
-      .insert({ apiKey })
+      .insert({ api_key: apiKey })
       .returning('id')
       .then(id =>
         //  Returns id of just inserted user.

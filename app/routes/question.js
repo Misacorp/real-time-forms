@@ -11,22 +11,23 @@
   *       200:
   *         description: "An array of question ids and their text representations."
   *         schema:
-  *           type: object
-  *           properties:
-  *             id:
-  *               type: integer
-  *             content:
-  *               type: string
-  *         examples:
-  *           application/json: [
+  *           type: array
+  *           items:
+  *             type: object
+  *             properties:
+  *               question_id:
+  *                 type: integer
+  *               content:
+  *                 type: string
+  *           example: [
   *             {
-  *               "id": 1,
-  *               "content": "What is the spiciest dish you have eaten?"
+  *               "question_id": "1",
+  *               "content": "How many giraffes fit into a small steamboat?"
   *             },
   *             {
-  *               "id": 2,
-  *               "content": "How many yellow books have you read?"
-  *             }
+  *               "question_id": "2",
+  *               "content": "What does being cold feel like?"
+  *             },
   *           ]
   *   post:
   *     summary: Creates a new question
@@ -58,7 +59,7 @@
   *               type: integer
   *         examples:
   *           application/json: {
-  *             "id": 2
+  *             "id": 1
   *           }
   *       400:
   *         description: "Bad request. Content parameter missing or empty."
@@ -77,6 +78,7 @@
   *         type: integer
   *         required: true
   *         description: Numeric ID of the question to get.
+  *         x-example: 42
   *     responses:
   *       200:
   *         description: "A question id and its text representation."
@@ -108,6 +110,7 @@
   *         type: integer
   *         required: true
   *         description: Numeric question ID for which to get responses.
+  *         x-example: 42
   *     tags:
   *       - Response
   *       - Question
@@ -190,11 +193,12 @@ module.exports = function questionRoute(router) {
           authorization: Joi.string().required(),
         }).options({ allowUnknown: true }),
       }),
-      (req, res, next) => {
+      (req, res) => {
         // Store user's API key
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
@@ -206,6 +210,7 @@ module.exports = function questionRoute(router) {
             res.status(200);
             res.send(data);
           });
+        return true;
       },
     )
 
@@ -221,11 +226,12 @@ module.exports = function questionRoute(router) {
         }),
       }),
       // Input has been validated
-      (req, res, next) => {
+      (req, res) => {
         // Check if user is authorized.
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
@@ -263,6 +269,7 @@ module.exports = function questionRoute(router) {
               createQuestion(content, userId, callback);
             }
           });
+        return true;
       },
     );
 
@@ -278,11 +285,12 @@ module.exports = function questionRoute(router) {
         }),
       }),
       // Input has been validated
-      (req, res, next) => {
+      (req, res) => {
         // Check if user is authorized
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
@@ -297,6 +305,7 @@ module.exports = function questionRoute(router) {
 
             // No data found
             if (!question) {
+              res.setHeader('Content-Type', 'application/json');
               res.sendStatus(404);
             } else {
               res.setHeader('Content-Type', 'application/json');
@@ -304,6 +313,7 @@ module.exports = function questionRoute(router) {
               res.send(question);
             }
           });
+        return true;
       },
     );
 
@@ -322,11 +332,12 @@ module.exports = function questionRoute(router) {
         }),
       }),
       // Input has been validated
-      (req, res, next) => {
+      (req, res) => {
         // Authorize user
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
@@ -339,6 +350,7 @@ module.exports = function questionRoute(router) {
           .then((data) => {
             if (!data[0]) {
               // Question not found with provided API key
+              res.setHeader('Content-Type', 'application/json');
               res.sendStatus(404);
               return false;
             }
@@ -352,6 +364,7 @@ module.exports = function questionRoute(router) {
               .then((responseData) => {
                 if (!responseData) {
                   // No responses found
+                  res.setHeader('Content-Type', 'application/json');
                   res.sendStatus(404);
                 } else {
                   // Responses found
@@ -379,6 +392,7 @@ module.exports = function questionRoute(router) {
               });
             return true;
           });
+        return true;
       },
     );
 

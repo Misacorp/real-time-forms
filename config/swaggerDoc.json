@@ -4,13 +4,16 @@
     "version": "0.0.2"
   },
   "produces": [
-    "application/json"
+    "application/json",
+    "application/json; charset=utf-8"
   ],
   "consumes": [
-    "application/json"
+    "application/json",
+    "application/json; charset=utf-8"
   ],
   "securityDefinitions": {
     "jwt": {
+      "description": "",
       "type": "apiKey",
       "name": "Authorization",
       "in": "header"
@@ -161,25 +164,26 @@
           "200": {
             "description": "An array of question ids and their text representations.",
             "schema": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "integer"
-                },
-                "content": {
-                  "type": "string"
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "question_id": {
+                    "type": "integer"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
                 }
-              }
-            },
-            "examples": {
-              "application/json": [
+              },
+              "example": [
                 {
-                  "id": 1,
-                  "content": "What is the spiciest dish you have eaten?"
+                  "question_id": "1",
+                  "content": "How many giraffes fit into a small steamboat?"
                 },
                 {
-                  "id": 2,
-                  "content": "How many yellow books have you read?"
+                  "question_id": "2",
+                  "content": "What does being cold feel like?"
                 }
               ]
             }
@@ -226,7 +230,7 @@
             },
             "examples": {
               "application/json": {
-                "id": 2
+                "id": 1
               }
             }
           },
@@ -252,7 +256,8 @@
             "name": "questionId",
             "type": "integer",
             "required": true,
-            "description": "Numeric ID of the question to get."
+            "description": "Numeric ID of the question to get.",
+            "x-example": 42
           }
         ],
         "responses": {
@@ -295,7 +300,8 @@
             "name": "questionId",
             "type": "integer",
             "required": true,
-            "description": "Numeric question ID for which to get responses."
+            "description": "Numeric question ID for which to get responses.",
+            "x-example": 42
           }
         ],
         "tags": [

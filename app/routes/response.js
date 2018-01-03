@@ -85,11 +85,12 @@ module.exports = function responseRoute(router) {
         })),
       }),
       // Input has been validated
-      (req, res, next) => {
+      (req, res) => {
         // Authorize user
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
@@ -123,6 +124,7 @@ module.exports = function responseRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }

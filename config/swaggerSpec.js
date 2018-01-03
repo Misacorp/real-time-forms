@@ -6,12 +6,13 @@ module.exports = {
       title: 'Real Time Forms',
       version: '0.0.2',
     },
-    produces: ['application/json',
+    produces: ['application/json', 'application/json; charset=utf-8',
     ],
-    consumes: ['application/json',
+    consumes: ['application/json', 'application/json; charset=utf-8',
     ],
     securityDefinitions: {
       jwt: {
+        description: '',
         type: 'apiKey',
         name: 'Authorization',
         in: 'header',

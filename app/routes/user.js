@@ -54,6 +54,7 @@ module.exports = function userRoute(router) {
         const key = req.headers.authorization;
         if (!key || key !== process.env.API_ADMIN_SECRET) {
           // If no key was provided, return Forbidden
+          res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
           return false;
         }
