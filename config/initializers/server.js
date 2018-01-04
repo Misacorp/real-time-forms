@@ -10,7 +10,7 @@ const logger = require('winston');
 
 let app;
 
-const start = function startserver(cb) {
+const start = function startServer(cb) {
   // Configure express
   app = express();
 

@@ -4,25 +4,47 @@ module.exports = {
   swaggerDefinition: {
     info: {
       title: 'Real Time Forms',
-      version: '0.0.2',
+      version: '0.0.3',
     },
-    produces: ['application/json', 'application/json; charset=utf-8',
+    produces: ['application/json; charset=utf-8',
     ],
-    consumes: ['application/json', 'application/json; charset=utf-8',
+    consumes: ['application/json',
     ],
     securityDefinitions: {
-      jwt: {
-        description: '',
+      ApiKeyAuth: {
         type: 'apiKey',
         name: 'Authorization',
         in: 'header',
       },
     },
     security: [
-      {
-        jwt: [],
-      },
+      { ApiKeyAuth: [] },
     ],
+    responses: {
+      Forbidden: {
+        description: 'API key not provided in Auhtorization header, or key is invalid.',
+        schema: {
+          $ref: '#/definitions/Error',
+        },
+      },
+    },
+    definitions: {
+      Error: {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+          },
+          message: {
+            type: 'string',
+          },
+        },
+        required: [
+          'code',
+          'message',
+        ],
+      },
+    },
   },
   apis: [
     path.join(__dirname, '../app/routes/response.js'),

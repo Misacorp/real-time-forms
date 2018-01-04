@@ -24,8 +24,9 @@ hooks.beforeAll((transactions, done) => {
 
 hooks.beforeEach((transaction, done) => {
   // Add authorization header to transaction
+  hooks.log('Dredd: Adding API key to request');
   transaction.request.headers.Authorization = apiKey;
-  transaction.request.headers['content-type'] = 'application/json';
+  transaction.request.headers['content-type'] = 'application/json; charset=utf-8';
   done();
 });
 
