@@ -1,185 +1,41 @@
-/**
-  * @swagger
-  * /api/question:
-  *   get:
-  *     summary: Gets all created questions
-  *     description:
-  *       "Returns the **id** and **content** of every available question in array format."
-  *     tags:
-  *       - Question
-  *     responses:
-  *       200:
-  *         description: "An array of question ids and their text representations."
-  *         schema:
-  *           type: array
-  *           items:
-  *             type: object
-  *             properties:
-  *               question_id:
-  *                 type: integer
-  *               content:
-  *                 type: string
-  *           example: [
-  *             {
-  *               "question_id": "1",
-  *               "content": "How many giraffes fit into a small steamboat?"
-  *             },
-  *             {
-  *               "question_id": "2",
-  *               "content": "What does being cold feel like?"
-  *             },
-  *           ]
-  *   post:
-  *     summary: Creates a new question
-  *     description:
-  *       "Creates a new question, returning the newly created question **id**."
-  *     tags:
-  *       - Question
-  *     parameters:
-  *       - name: body
-  *         in: body
-  *         required: true
-  *         schema:
-  *           type: object
-  *           required:
-  *             - content
-  *           properties:
-  *             content:
-  *               type: string
-  *           example: {
-  *             "content": "What is the spiciest dish you have eaten?"
-  *           }
-  *     responses:
-  *       201:
-  *         description: "Resource created and available through location header URI."
-  *         schema:
-  *           type: object
-  *           properties:
-  *             id:
-  *               type: integer
-  *         examples:
-  *           application/json: {
-  *             "id": 1
-  *           }
-  *       400:
-  *         description: "Bad request. Content parameter missing or empty."
-  *       404:
-  *         description: "Couldn't create question for current user. User not found."
-  * /api/question/{questionId}:
-  *   get:
-  *     summary: Get a specific question
-  *     description:
-  *       "Returns the **id** and **content** of the specified question."
-  *     tags:
-  *       - Question
-  *     parameters:
-  *       - in: path
-  *         name: questionId
-  *         type: integer
-  *         required: true
-  *         description: Numeric ID of the question to get.
-  *         x-example: 42
-  *     responses:
-  *       200:
-  *         description: "A question id and its text representation."
-  *         schema:
-  *           type: object
-  *           properties:
-  *             id:
-  *               type: integer
-  *             content:
-  *               type: string
-  *         examples:
-  *           application/json:
-  *             {
-  *               "id": 1,
-  *               "content": "What is the spiciest dish you have eaten?"
-  *             }
-  *       403:
-  *         description: No Authorization header was provided, or header was invalid.
-  *       404:
-  *         description: "Not found. No question found with specified **id**."
-  * /api/question/{questionId}/response:
-  *   get:
-  *     summary: Get all unique responses to a specific question
-  *     description:
-  *       "Returns every unique response corresponding to **questionId**."
-  *     parameters:
-  *       - in: path
-  *         name: questionId
-  *         type: integer
-  *         required: true
-  *         description: Numeric question ID for which to get responses.
-  *         x-example: 42
-  *     tags:
-  *       - Response
-  *       - Question
-  *     responses:
-  *       200:
-  *         description: "The requested question object and all unique responses to that question.
-  *                       The amount of each response is included."
-  *         schema:
-  *           type: object
-  *           properties:
-  *             question:
-  *               type: object
-  *               properties:
-  *                 id:
-  *                   type: integer
-  *                 content:
-  *                   type: string
-  *             unique_responses:
-  *               type: array
-  *               items:
-  *                 type: object
-  *                 properties:
-  *                   content:
-  *                     type: string
-  *                   count:
-  *                     type: integer
-  *         examples:
-  *           application/json:
-  *             {
-  *               "question": {
-  *                 "id": 4,
-  *                 "content": "What is the spiciest dish you have eaten?"
-  *               },
-  *               "unique_responses": [
-  *                 {
-  *                   content: "Mexican noodles. They totally exist.",
-  *                   count: 5
-  *                 },
-  *                 {
-  *                   content: "Fireman's Breathmints.",
-  *                   count: 2
-  *                 },
-  *                 {
-  *                   content: "Chinese fajitas. They're a thing.",
-  *                   count: 1
-  *                 }
-  *               ]
-  *             }
-  *       400:
-  *         description: "Bad request. Authorization header missing or invalid."
-  *       404:
-  *         description: "No question found with specified id and provided authorization."
-  */
-
-
 const Celebrate = require('celebrate');
 
 const { Joi } = Celebrate;
 const store = require('../actions/store');
 
 
-function createQuestion(content, userId, cb) {
-  // Request is good. Add an entry.
-  store
-    .addQuestion(content, userId, cb)
-    .then((questionId) => {
-      console.log(`Added question: "${content}" with id: ${questionId}`);
-      cb(questionId);
-    });
+function createNewQuestion(content, apiKey) {
+  return new Promise((resolve, reject) => {
+    function saveQuestion(userId) {
+      // Save question to database
+      store
+        .addQuestion(content, userId)
+        .then((questionId) => {
+          // Question added, return questionID
+          resolve(questionId);
+        })
+        .catch((error) => {
+          // Some error
+          reject(error);
+        });
+    }
+
+    store
+      .getUserByKey(apiKey)
+      .then((userData) => {
+        if (userData.length < 1) {
+          // User doesn't exist.
+          store.addUser(apiKey)
+            .then((userId) => {
+              saveQuestion(userId);
+            });
+        } else {
+          // User exists
+          const userId = userData[0].id;
+          saveQuestion(userId);
+        }
+      });
+  });
 }
 
 
@@ -198,7 +54,7 @@ module.exports = function questionRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.sendStatus(403);
           return false;
         }
@@ -206,9 +62,9 @@ module.exports = function questionRoute(router) {
         store
           .getQuestions(key)
           .then((data) => {
-            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
             res.status(200);
-            res.send(data);
+            res.json(data);
           });
         return true;
       },
@@ -231,43 +87,30 @@ module.exports = function questionRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.sendStatus(403);
           return false;
         }
-
-        // Callback function that sends a successful response when a question is created.
-        const callback = function returnQuestion(questionId) {
-          // Construct URI where the created resource will be available.
-          const uri = `/question/${questionId}`;
-
-          // Send response
-          res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Location', uri);
-          res.status(201);
-          res.send({ id: questionId });
-        };
-
-        let userId = '';
-        const content = req.body.content;
+        
+        // Get text content from request body.
+        const { content } = req.body;
 
         // Get user id by API key
-        store
-          .getUserByKey(key)
-          .then((data) => {
-            if (data.length < 1) {
-              console.log("User doesn't exist yet. Creating...");
+        createNewQuestion(content, key)
+          .then((questionId) => {
+            // Question created successfully. Send HTTP response
+            // Construct URI where the created resource will be available.
+            const uri = `/api/question/${questionId}`;
 
-              // Create new user with key
-              store.addUser(key).then((userId) => {
-                // User created, now create the question
-                createQuestion(content, userId, callback);
-              });
-            } else {
-              // User exists, create the question
-              userId = data[0].id;
-              createQuestion(content, userId, callback);
-            }
+            // Send HTTP response
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.setHeader('Location', uri);
+            res.status(201);
+            res.json({ id: questionId });
+          })
+          .catch((error) => {
+            // Some error when creating question
+            console.log(error);
           });
         return true;
       },
@@ -290,7 +133,7 @@ module.exports = function questionRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.sendStatus(403);
           return false;
         }
@@ -305,12 +148,12 @@ module.exports = function questionRoute(router) {
 
             // No data found
             if (!question) {
-              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
               res.sendStatus(404);
             } else {
-              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
               res.status(200);
-              res.send(question);
+              res.json(question);
             }
           });
         return true;
@@ -337,7 +180,7 @@ module.exports = function questionRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.sendStatus(403);
           return false;
         }
@@ -350,7 +193,7 @@ module.exports = function questionRoute(router) {
           .then((data) => {
             if (!data[0]) {
               // Question not found with provided API key
-              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
               res.sendStatus(404);
               return false;
             }
@@ -364,7 +207,7 @@ module.exports = function questionRoute(router) {
               .then((responseData) => {
                 if (!responseData) {
                   // No responses found
-                  res.setHeader('Content-Type', 'application/json');
+                  res.setHeader('Content-Type', 'application/json; charset=utf-8');
                   res.sendStatus(404);
                 } else {
                   // Responses found
@@ -379,9 +222,9 @@ module.exports = function questionRoute(router) {
                   }
 
                   // Send response
-                  res.setHeader('Content-Type', 'application/json');
+                  res.setHeader('Content-Type', 'application/json; charset=utf-8');
                   res.status(200);
-                  res.send({
+                  res.json({
                     question: {
                       id: qid,
                       content: questionContent,
@@ -409,3 +252,5 @@ module.exports = function questionRoute(router) {
 
   router.use(Celebrate.errors());
 };
+
+module.exports.createNewQuestion = createNewQuestion;

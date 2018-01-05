@@ -8,7 +8,7 @@ module.exports = {
       password: 'vagrant',
       database: 'realtimeforms',
     },
-    debug: true,
+    debug: false,
   },
 
   production: {

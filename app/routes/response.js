@@ -1,73 +1,29 @@
-/**
-  * @swagger
-  * /api/response:
-  *   post:
-  *     summary: Creates new responses
-  *     description:
-  *       "Creates new responses from an array of response objects.
-  *        Responses with no **content** are accepted but ignored.
-  *        Responses with a nonexistant **question_id** are ignored."
-  *     tags:
-  *       - Response
-  *     parameters:
-  *       - name: body
-  *         in: body
-  *         required: true
-  *         schema:
-  *           type: array
-  *           items:
-  *             type: object
-  *             required:
-  *               - question_id
-  *             properties:
-  *               question_id:
-  *                 type: integer
-  *               content:
-  *                 type: string
-  *           example: [
-  *             {
-  *               "question_id": "3",
-  *               "content": "My family has seven dogs and a giraffe."
-  *             },
-  *             {
-  *               "question_id": "7",
-  *               "content": "Mexican noodles. They totally exist."
-  *             },
-  *           ]
-  *     responses:
-  *       200:
-  *         description: "Every response that corresponded to an existing question was recorded.
-  *          Responses to nonexistant questions are ignored."
-  *       400:
-  *         description: "Bad request. Question id or content parameters missing."
-  *   delete:
-  *     summary: Deletes a response
-  *     description:
-  *       "Deletes an array of responses."
-  *     tags:
-  *       - Response
-  *     parameters:
-  *       - name: response_array
-  *         in: body
-  *         required: true
-  *         schema:
-  *           type: array
-  *           items:
-  *             type: integer
-  *           example: [1,12,42]
-  *     responses:
-  *       200:
-  *         description: "Every response that corresponded to an existing question was recorded.
-  *          Responses to nonexistant questions are ignored."
-  *       400:
-  *         description: "Bad request. Question id or content parameters missing."
-  */
-
-
 const Celebrate = require('celebrate');
 
 const { Joi } = Celebrate;
 const store = require('../actions/store');
+
+/**
+ * Save an array of responses to their respective questions.
+ * @param {Object[]} responses               An array of responses
+ * @param {int}      responses[].question_id Question id to which the response is for
+ * @param {string}   responses[].content     Text content of this response
+ * @param {string}   apiKey                  API key
+ */
+function createNewResponse(responses, apiKey) {
+  return new Promise((resolve, reject) => {
+    // Store the response object
+    store
+      .addResponses(responses, apiKey)
+      .then(() => {
+        resolve();
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+}
+
 
 module.exports = function responseRoute(router) {
   router.route('/')
@@ -90,21 +46,27 @@ module.exports = function responseRoute(router) {
         const key = req.headers.authorization;
         if (!key) {
           // If no key was provided, return Forbidden
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.sendStatus(403);
           return false;
         }
 
-        const content = req.body;
+        // Request is good. Add an entry
+        const responses = req.body;
 
-        // Request is good. Add an entry.
-        store
-          .addResponses(content, key)
+        const newResponse = createNewResponse(responses, key);
+        newResponse
           .then(() => {
             // Send response
-            res.setHeader('Content-Type', 'application/json');
-            res.sendStatus(200);
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.status(200);
+            res.json({ status: 'success' }); // Get some more descriptive information?
+          })
+          .catch((error) => {
+            console.log(req.body);
+            console.log(`Response addition failed with error ${error}`);
           });
+
         return true;
       },
     )
@@ -145,3 +107,5 @@ module.exports = function responseRoute(router) {
 
   router.use(Celebrate.errors());
 };
+
+module.exports.createNewResponse = createNewResponse;

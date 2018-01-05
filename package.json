@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "swagger-jsdoc-generator config/swaggerSpec.js > config/swaggerDoc.json && API_ADMIN_SECRET=dev NODE_ENV=development node index.js",
-    "test": "pkill --signal SIGINT rtf && swagger-jsdoc-generator config/swaggerSpec.js > config/swaggerDoc.json && dredd",
+    "dev": "API_ADMIN_SECRET=dev NODE_ENV=development node index.js",
+    "test": "pkill --signal SIGINT rtf && dredd",
     "stop": "pkill --signal SIGINT rtf"
   },
   "keywords": [
@@ -36,7 +36,8 @@
     "swagger-jsdoc": "^1.9.7",
     "swagger-ui": "^3.8.1",
     "swagger-ui-express": "^2.0.13",
-    "winston": "^2.4.0"
+    "winston": "^2.4.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "eslint-config-airbnb-base": "^12.1.0",

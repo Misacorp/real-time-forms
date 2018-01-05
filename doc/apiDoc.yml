@@ -1,0 +1,261 @@
+info:
+  title: Real Time Forms
+  version: 0.0.3
+produces:
+  - application/json; charset=utf-8
+consumes:
+  - application/json; charset=utf-8
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+security:
+  - ApiKeyAuth: []
+responses:
+  Forbidden:
+    description: 'API key not provided or invalid.'
+    schema:
+      $ref: '#/definitions/Error'
+definitions:
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    required:
+      - code
+      - message
+swagger: '2.0'
+paths:
+  # Response related requests.
+  /api/response:
+    post:
+      summary: Create new response
+      description: Creates new responses from an array of response objects. Responses with no **content** are accepted but ignored. Responses with a nonexistant **question_id** are ignored.
+      tags:
+        - Response
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - question_id
+              properties:
+                question_id:
+                  type: integer
+                content:
+                  type: string
+            example:
+              - question_id: '3'
+                content: My family has seven dogs and a giraffe.
+              - question_id: '7'
+                content: Mexican noodles. They totally exist.
+      responses:
+        '200':
+          description: Every response that corresponded to an existing question was recorded. Responses to nonexistant questions are ignored.
+        '400':
+          description: Bad request. Question id or content parameters missing.
+    delete:
+      summary: Deletes a response
+      description: Deletes an array of responses.
+      tags:
+        - Response
+      parameters:
+        - name: response_array
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+            example:
+              - 1
+              - 12
+              - 1
+      responses:
+        '200':
+          description: Every response that corresponded to an existing question was recorded. Responses to nonexistant questions are ignored.
+        '400':
+          description: Bad request. Question id or content parameters missing.
+  # User related requests
+  /api/user:
+    get:
+      summary: Get users
+      description: Gets all users. Only available for administrators.
+      tags:
+        - User
+      responses:
+        '200':
+          description: An array of user ids and their respective API keys.
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                api_key:
+                  type: string
+          examples:
+            application/json; charset=utf-8:
+              - id: 1
+                api_key: API_KEY_1
+              - id: 2
+                api_key: API_KEY_2
+        '400':
+           $ref: "#/responses/Forbidden"
+        '403':
+           $ref: "#/responses/Forbidden"
+  # Question related requests
+  /api/question:
+    # Get an existing question
+    get:
+      summary: Get questions
+      description: Returns the **id** and **content** of every available question in array format. Only returns questions the user owns.
+      tags:
+        - Question
+      responses:
+        '200':
+          description: An array of question ids and their text representations.
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                question_id:
+                  type: integer
+                content:
+                  type: string
+            example:
+              - question_id: '1'
+                content: How many giraffes fit into a small steamboat?
+              - question_id: '2'
+                content: What does being cold feel like?
+    # Post a new question
+    post:
+      summary: Create a question
+      description: Creates a new question, returning the newly created question **id**.
+      tags:
+        - Question
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - content
+            properties:
+              content:
+                type: string
+            example:
+              content: What is the spiciest dish you have eaten?
+      responses:
+        '201':
+          description: Resource created and available through location header URI.
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
+          examples:
+            application/json; charset=utf-8:
+              id: 1
+        '400':
+          description: Bad request. Content parameter missing or empty.
+        '404':
+          description: Couldn't create question for current user. User not found.
+  /api/question/{questionId}:
+    # Get a specific question by id
+    get:
+      summary: Get a specific question
+      description: Returns the **id** and **content** of the specified question.
+      tags:
+        - Question
+      parameters:
+        - in: path
+          name: questionId
+          type: integer
+          required: true
+          description: Numeric ID of the question to get.
+          x-example: 1
+      responses:
+        '200':
+          description: A question id and its text representation.
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
+              content:
+                type: string
+          examples:
+            application/json; charset=utf-8:
+              id: 1
+              content: What is the spiciest dish you have eaten?
+        '403':
+          description: 'No Authorization header was provided, or header was invalid.'
+        '404':
+          description: No question found with specified **id**.
+  /api/question/{questionId}/response:
+    # Get responses to a specific question
+    get:
+      summary: Get all unique responses to a specific question
+      description: Returns every unique response corresponding to **questionId**.
+      parameters:
+        - in: path
+          name: questionId
+          type: integer
+          required: true
+          description: Numeric question ID for which to get responses.
+          x-example: 1
+      tags:
+        - Response
+        - Question
+      responses:
+        '200':
+          description: The requested question object and all unique responses to that question. The amount of each response is included.
+          schema:
+            type: object
+            properties:
+              question:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  content:
+                    type: string
+              unique_responses:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    content:
+                      type: string
+                    count:
+                      type: integer
+          examples:
+            application/json; charset=utf-8:
+              question:
+                id: 4
+                content: What is the spiciest dish you have eaten?
+              unique_responses:
+                - content: Mexican noodles. They totally exist.
+                  count: 5
+                - content: Fireman's Breathmints.
+                  count: 2
+                - content: Chinese fajitas. They're a thing.
+                  count: 1
+        '400':
+          description: Bad request. Authorization header missing or invalid.
+        '404':
+          description: No question found with specified id and provided authorization.
+parameters: {}
+tags: []

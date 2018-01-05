@@ -48,6 +48,8 @@ module.exports = {
 
   addResponses(response, key) {
     return Promise.try(() => {
+      let count = 0;
+
       for(const item in response) {
         const question_id = response[item].question_id;
         const content = response[item].content;
@@ -78,6 +80,7 @@ module.exports = {
         //   })
         //   .returning(['id','content']);
 
+        count += 1;
 
         const selectStatement = knex('question')
           .join('user', 'question.owner', 'user.id')
@@ -117,6 +120,7 @@ module.exports = {
         .then((data) => {
           //  Do something here. The very presence of this .then() function
           //  actually makes the query do its thing.
+          return count;
         });
       }
     });
@@ -187,9 +191,11 @@ module.exports = {
 
 
   userExists(key) {
-    if (this.getUserByKey(key)[0]) {
+    const userId = this.getUserByKey(key)[0];
+
+    if (!userId) {
       // User exists
-      return true;
+      return userId;
     }
     return false;
   },
@@ -203,15 +209,19 @@ module.exports = {
     return Promise.resolve(promise);
   },
 
-
   addUser(apiKey) {
-    const userId = knex('user')
-      .insert({ api_key: apiKey })
-      .returning('id')
-      .then(id =>
-        //  Returns id of just inserted user.
-        id[0]);
+    const userId = this.userExists(apiKey);
 
+    if (!userId) {
+      const user = knex('user')
+        .insert({ api_key: apiKey })
+        .returning('id')
+        .then(id =>
+          //  Returns id of just inserted user.
+          id[0]);
+
+      return user;
+    }
     return userId;
   },
 };
