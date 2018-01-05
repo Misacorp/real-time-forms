@@ -63,7 +63,7 @@ paths:
         '400':
           description: Bad request. Question id or content parameters missing.
     delete:
-      summary: Deletes a response
+      summary: Delete responses
       description: Deletes an array of responses.
       tags:
         - Response
@@ -77,13 +77,15 @@ paths:
               type: integer
             example:
               - 1
-              - 12
-              - 1
+              - 3
+              - 5
       responses:
         '200':
-          description: Every response that corresponded to an existing question was recorded. Responses to nonexistant questions are ignored.
+          description: Count of deleted responses.
+          schema:
+            type: integer
         '400':
-          description: Bad request. Question id or content parameters missing.
+          description: Bad request. Question id or response id array missing.
   # User related requests
   /api/user:
     get:

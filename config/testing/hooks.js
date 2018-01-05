@@ -17,7 +17,8 @@ let responseCount = 0;
 
 /**
  * Creates a test question.
- * @param {string} content Text content for this question
+ * @param   {string} content Text content for this question
+ * @returns {int}    Id of the created question  
  */
 function createQuestion(content) {
   // Give questions unique numbers.
@@ -34,12 +35,12 @@ function createQuestion(content) {
  * Save an array of responses to their respective questions.
  * @param {Object[]} responseArray An array of responses
  */
-function createResponse(responseArray) {
+function createResponses(responseArray) {
   // Give responses unique numbers.
   responseCount += 1;
   return new Promise((resolve, reject) => {
     response.createNewResponse(responseArray, apiKey)
-      .then((storeResponse) => { resolve(storeResponse); })
+      .then(() => { resolve(); })
       .catch((error) => { reject(error); });
   });
 }
@@ -74,17 +75,23 @@ hooks.beforeEach((transaction, done) => {
   done();
 });
 
-
-// Change API key to admin secret for this action
+/**
+ * GET: User > Get users
+ * /api/user/
+ * Change API key to admin secret before getting users (only admin can get a list of users).
+ */
 hooks.before('User > /api/user > Get users > 200 > application/json; charset=utf-8', (transaction, done) => {
   transaction.request.headers.Authorization = adminSecret;
   hooks.log(`Dredd: Changed API key to ${adminSecret}`);
-  hooks.log(transaction);
   done();
 });
 
 
-// Add a question before responding to it
+/**
+ * POST: Response > Create new response
+ * /api/response
+ * Add new questions before creating responses.
+ */
 hooks.before('Response > /api/response > Create new response > 200 > application/json; charset=utf-8', (transaction, done) => {
   const questionsToAdd = 3;
   const questionIds = [];
@@ -103,7 +110,51 @@ hooks.before('Response > /api/response > Create new response > 200 > application
 });
 
 
-// Add a question before getting one
+/**
+ * DELETE: Response > Create new response
+ * /api/response
+ * Delete an array of responses by id.
+ */
+hooks.before('Response > /api/response > Delete responses > 200 > application/json; charset=utf-8', (transaction, done) => {
+  /**
+   * Before deleting responses, do the following:
+   * 1. Create a question
+   * 2. Create responses to question
+   */
+  const responsesToAdd = 5;
+  const responses = [];
+
+  const newQuestion = createQuestion('DELETE /api/response');
+  newQuestion.then((questionId) => {
+    hooks.log(`(DELETE RESPONSE) Created a question with id ${questionId}`);
+    // Populate an array with response objects
+    for (let i = 0; i < responsesToAdd; i += 1) {
+      responses.push({
+        question_id: questionId,
+        content: `Deletion test answer ${i}`,
+      });
+    }
+    // Submit those responses
+    const newResponses = createResponses(responses);
+    newResponses.then((/* Need to get added response IDs from response.js for this */) => {
+      // Store the returned response IDs for later use.
+      done();
+    });
+  });
+
+  /**
+  * After deleting responses, do the following:
+  * 1. Make sure responses were deleted
+  * 2. Make sure no responses were deleted from other users. (This is a bit more complex).
+  */
+});
+
+
+/**
+ * GET: Question > Get a specific question
+ * /api/question/{questionId}
+ * Add new questions before getting questions.
+ */
 hooks.before('Question > /api/question/{questionId} > Get a specific question > 200 > application/json; charset=utf-8', (transaction, done) => {
   hooks.log('Adding 5 questions before getting one with /api/question/{questionId}');
   const questionsToAdd = 5;
@@ -123,27 +174,33 @@ hooks.before('Question > /api/question/{questionId} > Get a specific question > 
 });
 
 
-// Add response before getting it
-hooks.before('/api/question/{questionId}/response > Get all unique responses to a specific question > 200 > application/json; charset=utf-8', (transaction, done) => {
-  /* 1. Create questions
-   * 2. Respond to questions
-   * 3. Get responses to these questions
-   */
-
+/**
+ * POST: Question > Get all unique responses to a specific question
+ * /api/question/{questionId}/response
+ * Add a new questions and responses before getting their responses.
+ */
+hooks.before('Question > /api/question/{questionId}/response > Get all unique responses to a specific question > 400 > application/json; charset=utf-8', (transaction, done) => {
+  // Set how many questions and responses we're going to create.
   const questionsToAdd = 3;
+  const questions = [];
   const questionIds = [];
   const responsesToAdd = 5;
 
   (async function loop() {
     for (let i = 0; i < questionsToAdd; i += 1) {
       // Create promises to add questions into an array.
-      // The promises will hopefully resolve into question ids.
       // These operations are asynchronous. We are only starting them here.
-      questionIds.push(createQuestion());
+      questions.push(createQuestion('/api/question/{questionId}/response'));
     }
     // Wait for async operations to complete, then continue with what we are doing.
-    await Promise.all(questionIds);
-    // questionIds should now have the ids of our created questions
+    await Promise.all(questions)
+      .then((results) => {
+        results.forEach((item) => {
+          questionIds.push(item);
+        });
+      });
+
+    // The questions array contains Promise objects. Let's get the returned questionIds from them.
 
     // Create responses to the previously created questions
     const responses = [];
@@ -154,10 +211,10 @@ hooks.before('/api/question/{questionId}/response > Get all unique responses to 
       // Push test response to array
       responses.push({
         question_id: questionIds[questionIndex],
-        content: `Test response ${responseCount}`,
+        content: `Test response ${i}`,
       });
     }
-    const savingResponses = createResponse(responses);
+    const savingResponses = createResponses(responses);
     await savingResponses;
 
     hooks.log('Dredd: Responses added!');

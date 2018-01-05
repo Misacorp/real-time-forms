@@ -50,17 +50,17 @@ module.exports = {
     return Promise.try(() => {
       let count = 0;
 
-      for(const item in response) {
+      for (const item in response) {
         const question_id = response[item].question_id;
         const content = response[item].content;
 
         // Don't save anything if response content is empty.
-        if(!content) continue;
+        if (!content) continue;
 
-       /*  Loop through each response, adding it to the 'response' table if
+        /*  Loop through each response, adding it to the 'response' table if
         *  its 'question_id' exists in the 'question' table AND the question's
         *  owner has the provided 'key'.
-        * 
+        *
         *  SQL queries in a loop isn't really a good idea, but I have yet
         *  to figure out how to do this with one single query.
         */
@@ -84,12 +84,10 @@ module.exports = {
 
         const selectStatement = knex('question')
           .join('user', 'question.owner', 'user.id')
-          .select(
-            knex.raw('?, ?', [
+          .select(knex.raw('?, ?', [
               question_id,
               content,
-            ]),
-          )
+            ]),)
           .from('question')
           .where({
             'question.id': question_id,
@@ -110,18 +108,16 @@ module.exports = {
         // });
 
         //  Construct INSERT statement
-        knex(
-          knex.raw(
+        knex(knex.raw(
             '?? (??, ??)',
-             ['response', 'question_id', 'content'],
-          ),
-        )
-        .insert(selectStatement)
-        .then((data) => {
+            ['response', 'question_id', 'content'],
+          ),)
+          .insert(selectStatement)
+          .then((data) => 
           //  Do something here. The very presence of this .then() function
           //  actually makes the query do its thing.
-          return count;
-        });
+           count
+        );
       }
     });
   },
@@ -170,9 +166,26 @@ module.exports = {
   },
 
 
-  // Delete an array of responses by id
-  deleteResponse(ids) {
+  /**
+   * Delete multiple responses.
+   * @param {int[]}  ids    An array of response IDs that are to be deleted.
+   * @param {string} apiKey API key
+   */
+  deleteResponses(ids, apiKey) {
     console.log(`Deleting responses with the following ids: ${ids}`);
+
+    const deletedCount = knex.select('response.*').from('response')
+      .whereIn('response.id', ids)
+      .whereIn('response.question_id', function selectDelRows() {
+        this
+          .select('question.id')
+          .from('question')
+          .join('user', 'question.owner', 'user.id')
+          .where('user.api_key', apiKey);
+      })
+      .del();
+
+    return deletedCount;
   },
 
 

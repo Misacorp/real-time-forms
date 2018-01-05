@@ -73,7 +73,7 @@ module.exports = function responseRoute(router) {
 
   // DELETE A RESPONSE
     .delete(
-      // Validate input. Authorization and response Id required.
+      // Validate input. Authorization and response ID array required.
       Celebrate({
         headers: Joi.object().keys({
           authorization: Joi.string().required(),
@@ -81,10 +81,11 @@ module.exports = function responseRoute(router) {
         body: Joi.array().items(Joi.number().integer().required()),
       }),
       // Input has been validated
-      (req, res, next) => {
+      (req, res) => {
         // Authorize user
         const key = req.headers.authorization;
         if (!key) {
+          // This is rather redundant with Joi validation, right?
           // If no key was provided, return Forbidden
           res.setHeader('Content-Type', 'application/json');
           res.sendStatus(403);
@@ -93,12 +94,16 @@ module.exports = function responseRoute(router) {
 
         const responseIds = req.body;
         store
-          .deleteResponse()
-          .then((result) => {
+          .deleteResponses(responseIds, key)
+          .then((count) => {
+            console.log('Deleted ', count);
             // Send response
             res.setHeader('Content-Type', 'application/json');
-            res.sendStatus(200);
-            console.log(result);
+            res.status(200);
+            res.json(count);
+          })
+          .catch((error) => {
+            console.log(error);
           });
 
         return true;
