@@ -7,14 +7,17 @@ module.exports = {
   addQuestion(content, uid) {
     console.log(`Inserting "${content}" with owner "${uid}" into question.`);
 
-    const questionId = knex('question')
-      .insert({ content, owner: uid })
-      .returning('id')
-      .then(id =>
-        //  Returns id of just inserted question.
-        id[0]);
-
-    return questionId;
+    return new Promise((resolve, reject) => {
+      knex('question')
+        .insert({ content, owner: uid })
+        .returning('id')
+        .then((id) => {
+          //  Returns id of just inserted question.
+          console.log(`[store.js / addQuestion] Added question with id: ${id[0]}`);
+          resolve(id[0]);
+        })
+        .catch(error => reject(error));
+    });
   },
 
 
@@ -85,9 +88,9 @@ module.exports = {
         const selectStatement = knex('question')
           .join('user', 'question.owner', 'user.id')
           .select(knex.raw('?, ?', [
-              question_id,
-              content,
-            ]),)
+            question_id,
+            content,
+          ]) )
           .from('question')
           .where({
             'question.id': question_id,
@@ -109,15 +112,14 @@ module.exports = {
 
         //  Construct INSERT statement
         knex(knex.raw(
-            '?? (??, ??)',
-            ['response', 'question_id', 'content'],
-          ),)
+          '?? (??, ??)',
+          ['response', 'question_id', 'content'],
+        ) )
           .insert(selectStatement)
-          .then((data) => 
+          .then(data =>
           //  Do something here. The very presence of this .then() function
           //  actually makes the query do its thing.
-           count
-        );
+            console.log(data));
       }
     });
   },
@@ -188,29 +190,46 @@ module.exports = {
     return deletedCount;
   },
 
-
-  getUserByKey(key) {
-    console.log(`Getting user by key ${key}`);
-
-    const promise = knex('user')
-      .select(['id', 'api_key'])
-      .where({
-        api_key: key,
-      })
-      .returning(['id', 'api_key']);
-
-    return Promise.resolve(promise);
+  /**
+   * Returns user by API key
+   * @param   {string}  apiKey   API key to search by.
+   * @returns {Object}  User data object: {id, apiKey}.
+   * @returns {boolean} If no user was found, returns false.
+   */
+  getUserByKey(apiKey) {
+    console.log(`[store.js / getUserByKey] Looking for user with key ${apiKey}`);
+    return new Promise((resolve, reject) => {
+      knex('user')
+        .select(['id', 'api_key'])
+        .where({
+          api_key: apiKey,
+        })
+        .returning(['id', 'api_key'])
+        .then((userArray) => {
+          console.log('[store.js / getUserByKey] Returned the following userArray: ', userArray);
+          if (userArray.length > 0) {
+            console.log('[store.js / getUserByKey] userArray has entries: ', userArray);
+            // Return the first (and only) user match. These keys are unique after all.
+            resolve(userArray[0]);
+          } else {
+            console.log('[store.js / getUserByKey] userArray was empty.');
+            resolve(false);
+          }
+          return true;
+        })
+        .catch(error => reject(error));
+    });
   },
 
 
   userExists(key) {
-    const userId = this.getUserByKey(key)[0];
-
-    if (!userId) {
-      // User exists
-      return userId;
-    }
-    return false;
+    this.getUserByKey(key)
+      .then((userData) => {
+        console.log('[store.js / userExists] Resolved with the following data:', userData);
+        if (userData) return true;
+        return false;
+      })
+      .catch(error => error);
   },
 
 
@@ -222,19 +241,43 @@ module.exports = {
     return Promise.resolve(promise);
   },
 
+  /**
+   * Create a new user.
+   * @param   {string} apiKey User's API key.
+   * @returns {number} User id with the given API key.
+   */
   addUser(apiKey) {
-    const userId = this.userExists(apiKey);
-
-    if (!userId) {
-      const user = knex('user')
-        .insert({ api_key: apiKey })
-        .returning('id')
-        .then(id =>
-          //  Returns id of just inserted user.
-          id[0]);
-
-      return user;
-    }
-    return userId;
+    console.log(`[store.js / addUser] Adding user with key ${apiKey}`);
+    return new Promise((resolve, reject) => {
+      this.getUserByKey(apiKey)
+        .then((userData) => {
+          console.log('[store.js / addUser] getUserByKey resolved with the following data:', userData);
+          if (userData) {
+            // User already exists. Return its id.
+            resolve(userData.id);
+          } else {
+            // User doesn't exist with the given key. Create it.
+            console.log(`[store.js / addUser] Creating user ${apiKey}`);
+            knex('user')
+              .insert({ api_key: apiKey })
+              .returning('id')
+              .then((userIds) => {
+                //  Returns id of just inserted user.
+                console.log(`[store.js / addUser] Added user ${apiKey} with id ${userIds[0]}`);
+                resolve(userIds[0]);
+              })
+              .catch(e => reject(e));
+          }
+        })
+        .catch((error) => {
+          console.log('[store.js / addUser] getUserByKey failed with error: ', error);
+          try {
+            this.getUserByKey(apiKey)
+              .then(userId => resolve(userId));
+          } catch (err) {
+            console.log('[store.js / addUser] Tried something, but failed');
+          }
+        });
+    });
   },
 };

@@ -1,7 +1,9 @@
 /* eslint no-param-reassign: 0 */
+/* eslint no-await-in-loop: 0 */
 /* Dredd hooks require the value reassignment of 'transaction' objects */
 
 const hooks = require('hooks');
+const store = require('../../app/actions/store');
 const knexCleaner = require('../../app/actions/knexCleaner');
 const question = require('../../app/routes/question');
 const response = require('../../app/routes/response');
@@ -23,11 +25,12 @@ let responseCount = 0;
 function createQuestion(content) {
   // Give questions unique numbers.
   questionCount += 1;
-  return new Promise((resolve, reject) => {
-    question.createNewQuestion(`${content} ${questionCount}`, apiKey)
-      .then((questionId) => { resolve(questionId); })
-      .catch((error) => { reject(error); });
-  });
+  return question.createNewQuestion(`${content} ${questionCount}`, apiKey);
+  // return new Promise((resolve, reject) => {
+  //   question.createNewQuestion(`${content} ${questionCount}`, apiKey)
+  //     .then((questionId) => { resolve(questionId); })
+  //     .catch((error) => { reject(error); });
+  // });
 }
 
 
@@ -101,10 +104,9 @@ hooks.before('Response > /api/response > Create new response > 200 > application
       // Create promises to add questions into an array.
       // The promises will hopefully resolve into question ids.
       // These operations are asynchronous. We are only starting them here.
-      questionIds.push(createQuestion('/api/response'));
+      await questionIds.push(createQuestion('/api/response'));
     }
-    await Promise.all(questionIds);
-    hooks.log(`questionIds: ${questionIds}`);
+    // await Promise.all(questionIds);
     done();
   }());
 });
@@ -125,22 +127,26 @@ hooks.before('Response > /api/response > Delete responses > 200 > application/js
   const responses = [];
 
   const newQuestion = createQuestion('DELETE /api/response');
-  newQuestion.then((questionId) => {
-    hooks.log(`(DELETE RESPONSE) Created a question with id ${questionId}`);
-    // Populate an array with response objects
-    for (let i = 0; i < responsesToAdd; i += 1) {
-      responses.push({
-        question_id: questionId,
-        content: `Deletion test answer ${i}`,
-      });
-    }
-    // Submit those responses
-    const newResponses = createResponses(responses);
-    newResponses.then((/* Need to get added response IDs from response.js for this */) => {
-      // Store the returned response IDs for later use.
-      done();
-    });
-  });
+  newQuestion
+    .then((questionId) => {
+      hooks.log(`(DELETE RESPONSE) Created a question with id ${questionId}`);
+      // Populate an array with response objects
+      for (let i = 0; i < responsesToAdd; i += 1) {
+        responses.push({
+          question_id: questionId,
+          content: `Deletion test answer ${i}`,
+        });
+      }
+      // Submit those responses
+      const newResponses = createResponses(responses);
+      newResponses
+        .then((/* Need to get added response IDs from response.js for this */) => {
+          // Store the returned response IDs for later use.
+          done();
+        })
+        .catch(error => hooks.log(error));
+    })
+    .catch(error => hooks.log(error));
 
   /**
   * After deleting responses, do the following:
@@ -165,9 +171,9 @@ hooks.before('Question > /api/question/{questionId} > Get a specific question > 
       // Create promises to add questions into an array.
       // The promises will hopefully resolve into question ids.
       // These operations are asynchronous. We are only starting them here.
-      questionIds.push(createQuestion('/api/question/{questionId}'));
+      await questionIds.push(createQuestion('/api/question/{questionId}'));
     }
-    await Promise.all(questionIds);
+    // await Promise.all(questionIds);
     hooks.log(`questionIds: ${questionIds}`);
     done();
   }());
@@ -198,6 +204,9 @@ hooks.before('Question > /api/question/{questionId}/response > Get all unique re
         results.forEach((item) => {
           questionIds.push(item);
         });
+      })
+      .catch((error) => {
+        hooks.log(error);
       });
 
     // The questions array contains Promise objects. Let's get the returned questionIds from them.
@@ -223,4 +232,32 @@ hooks.before('Question > /api/question/{questionId}/response > Get all unique re
     // Code here...
     done();
   }());
+});
+
+
+/**
+ * AFTER EACH
+ * Check that no API key exists twice in the user table.
+ */
+hooks.afterEach((transaction, done) => {
+  store.getUsers()
+    .then((userData) => {
+      // Count the number of times an API key is present
+      const uniques = userData
+        .map(entry => ({ count: 1, apiKey: entry.api_key }))
+        .reduce((a, b) => {
+          a[b.apiKey] = (a[b.apiKey] || 0) + b.count;
+          return a;
+        }, {});
+
+      const duplicates = Object.keys(uniques).filter(a => uniques[a] > 1);
+      if (duplicates.length > 0) {
+        hooks.log('[FAIL] Duplicate API keys were left in database');
+        transaction.fail = 'Duplicate API keys were left in database';
+      }
+      done();
+    })
+    .catch((error) => {
+      hooks.log(error);
+    });
 });

@@ -17,6 +17,10 @@ responses:
     description: 'API key not provided or invalid.'
     schema:
       $ref: '#/definitions/Error'
+  CouldNotAdd:
+    description: 'Server failed to add resource.'
+    schema:
+      $ref: '#/definitions/Error'
 definitions:
   Error:
     type: object
@@ -174,6 +178,8 @@ paths:
           description: Bad request. Content parameter missing or empty.
         '404':
           description: Couldn't create question for current user. User not found.
+        '500':
+          $ref: "#/responses/CouldNotAdd"
   /api/question/{questionId}:
     # Get a specific question by id
     get:

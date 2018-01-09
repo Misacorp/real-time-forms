@@ -3,39 +3,68 @@ const Celebrate = require('celebrate');
 const { Joi } = Celebrate;
 const store = require('../actions/store');
 
-
+/**
+ * Creates a new question.
+ * Creates a user entry for the provided API key if one doesn't exist yet.
+ * @param   {string} content Question text content.
+ * @param   {string} apiKey  User's API key.
+ */
 function createNewQuestion(content, apiKey) {
   return new Promise((resolve, reject) => {
-    function saveQuestion(userId) {
-      // Save question to database
-      store
-        .addQuestion(content, userId)
-        .then((questionId) => {
-          // Question added, return questionID
-          resolve(questionId);
-        })
-        .catch((error) => {
-          // Some error
-          reject(error);
-        });
-    }
-
-    store
-      .getUserByKey(apiKey)
-      .then((userData) => {
-        if (userData.length < 1) {
-          // User doesn't exist.
-          store.addUser(apiKey)
-            .then((userId) => {
-              saveQuestion(userId);
-            });
-        } else {
-          // User exists
-          const userId = userData[0].id;
-          saveQuestion(userId);
-        }
+    store.addUser(apiKey)
+      .then((userId) => {
+        store
+          .addQuestion(content, userId)
+          .then((questionId) => {
+            // Question added, return questionID
+            resolve(questionId);
+          })
+          .catch((error) => {
+            // Some error
+            reject(error);
+          });
       });
   });
+
+
+  // return new Promise((resolve, reject) => {
+  //   // Call this function when a question is to be entered.
+  //   function saveQuestion(userId) {
+  //     // Save question to database
+  //     store
+  //       .addQuestion(content, userId)
+  //       .then((questionId) => {
+  //         // Question added, return questionID
+  //         resolve(questionId);
+  //       })
+  //       .catch((error) => {
+  //         // Some error
+  //         reject(error);
+  //       });
+  //   }
+
+  //   store
+  //     .getUserByKey(apiKey)
+  //     .then((userId) => {
+  //       console.log(`[question.js] Looked for user with key ${apiKey} and found`, userId);
+  //       if (!userId) {
+  //         // User doesn't exist.
+  //         console.log(`[WARN] User with key ${apiKey} doesn't exist. Creating...`);
+  //         store.addUser(apiKey)
+  //           .then((id) => {
+  //             saveQuestion(id)
+  //               .then(questionId => resolve(questionId))
+  //               .catch(error => reject(error));
+  //           });
+  //       } else {
+  //         // User exists
+  //         console.log(`[OK] User with key ${apiKey} exists!`);
+  //         saveQuestion(userId)
+  //           .then(questionId => resolve(questionId))
+  //           .catch(error => reject(error));
+  //       }
+  //     });
+  // });
 }
 
 
@@ -91,7 +120,7 @@ module.exports = function questionRoute(router) {
           res.sendStatus(403);
           return false;
         }
-        
+
         // Get text content from request body.
         const { content } = req.body;
 
@@ -109,8 +138,9 @@ module.exports = function questionRoute(router) {
             res.json({ id: questionId });
           })
           .catch((error) => {
-            // Some error when creating question
-            console.log(error);
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.status(500);
+            res.json({ error: `Failed to add question ${error}` });
           });
         return true;
       },
@@ -144,7 +174,6 @@ module.exports = function questionRoute(router) {
           .getQuestion(qid, key)
           .then((data) => {
             const question = data[0];
-            console.log(question);
 
             // No data found
             if (!question) {
